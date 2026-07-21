@@ -1,0 +1,661 @@
+// ──────────────────────────────────────────────────────────────
+// Vinci AI — Prisma Schema
+// Postgres via Supabase. auth.users (Supabase Auth) is the source
+// of identity; `User` here is the public profile row keyed by the
+// same UUID (id) as auth.users.id, kept in sync via a DB trigger
+// (see prisma/sql/sync_user_trigger.sql).
+// ──────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ──────────────────────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────────────────────
+
+enum CollectibleCategory {
+  TRADING_CARD
+  SPORTS_CARD
+  COMIC
+  WATCH
+  SNEAKER
+  COIN
+  NFT
+  FIGURE
+  MEMORABILIA
+  OTHER
+}
+
+enum CollectibleStatus {
+  OWNED
+  WISHLIST
+  FAVORITE
+  SOLD
+  PURCHASED
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum CollectorArchetype {
+  INVESTOR
+  HISTORIAN
+  COMPLETIONIST
+  CURATOR
+  FLIPPER
+  EXPLORER
+  TREND_HUNTER
+  MINIMALIST
+  LUXURY_COLLECTOR
+  COMMUNITY_COLLECTOR
+  PRESERVATIONIST
+  COMPETITIVE_COLLECTOR
+}
+
+enum RiskProfile {
+  CONSERVATIVE
+  BALANCED
+  AGGRESSIVE
+}
+
+enum MemorySource {
+  CHAT
+  IMAGE_ANALYSIS
+  COLLECTION_ACTION
+  SEARCH
+  MANUAL_EDIT
+  ONBOARDING
+}
+
+enum NotificationType {
+  MEMORY_UPDATE
+  DNA_UPDATE
+  ACHIEVEMENT_UNLOCKED
+  MARKET_ALERT
+  AUTHENTICITY_ALERT
+  SYSTEM
+}
+
+enum ActivityType {
+  COLLECTIBLE_ADDED
+  COLLECTIBLE_UPDATED
+  COLLECTIBLE_REMOVED
+  IMAGE_ANALYZED
+  CHAT_MESSAGE
+  SEARCH_PERFORMED
+  WISHLIST_UPDATED
+  MEMORY_UPDATED
+  DNA_SNAPSHOT_CREATED
+  GOAL_UPDATED
+  REPORT_GENERATED
+}
+
+enum GoalStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+// ──────────────────────────────────────────────────────────────
+// CORE IDENTITY
+// ──────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @db.Uuid // mirrors auth.users.id
+  email       String   @unique
+  displayName String?
+  avatarUrl   String?
+  isGuest     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  collections      Collection[]
+  collectibles     Collectible[]
+  aiChats          AIChat[]
+  savedSearches    SavedSearch[]
+  memories         CollectorMemory[]
+  notifications    Notification[]
+  settings         Settings?
+  activityLogs     ActivityLog[]
+  dnaSnapshots     DNASnapshot[]
+  achievements     Achievement[]
+  goals            Goal[]
+  legacyReports    LegacyReport[]
+  checkpoints      ConversationCheckpoint[]
+  memorySuggestions MemorySuggestion[]
+  tags             Tag[]
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────────────────────
+// COLLECTION DOMAIN
+// ──────────────────────────────────────────────────────────────
+
+model Collection {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String
+  description String?
+  coverImageUrl String?
+  isDefault   Boolean  @default(false)
+  aiSummary   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectibles Collectible[]
+
+  @@index([userId])
+  @@map("collections")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  name      String
+  color     String   @default("#6D5DFB")
+  parentId  String?  @db.Uuid
+  isPinned  Boolean  @default(false)
+  isAiSuggested Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Tag?                @relation("TagHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Tag[]               @relation("TagHierarchy")
+  collectibles CollectibleTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model CollectibleTag {
+  collectibleId String @db.Uuid
+  tagId         String @db.Uuid
+
+  collectible Collectible @relation(fields: [collectibleId], references: [id], onDelete: Cascade)
+  tag         Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([collectibleId, tagId])
+  @@map("collectible_tags")
+}
+
+model Collectible {
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String              @db.Uuid
+  collectionId    String?             @db.Uuid
+  title           String
+  category        CollectibleCategory
+  status          CollectibleStatus   @default(OWNED)
+  brand           String?
+  franchise       String?
+  artist          String?
+  year            Int?
+  condition       String?
+  gradingCompany  String?
+  grade           String?
+  purchasePrice   Decimal?            @db.Decimal(12, 2)
+  estimatedValue  Decimal?            @db.Decimal(12, 2)
+  currency        String              @default("USD")
+  rarityScore     Int?                // 0-100, AI estimated
+  isAuthenticated Boolean             @default(false)
+  lastAnalysisConfidence Int?
+  notes           String?
+  tags            String[]            @default([])
+  // Wishlist-specific fields (only meaningful when status = WISHLIST)
+  wishlistTargetPrice  Decimal?       @db.Decimal(12, 2)
+  wishlistPriority     Int?           // 1 (low) - 5 (high)
+  wishlistDesiredCondition String?
+  purchasedAt     DateTime?
+  soldAt          DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection   Collection?    @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  images       Image[]
+  analyses     ImageAnalysis[]
+  timelineEvents CollectibleTimelineEvent[]
+  collectibleTags CollectibleTag[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, category])
+  @@map("collectibles")
+}
+
+model Image {
+  id            String   @id @default(uuid()) @db.Uuid
+  collectibleId String   @db.Uuid
+  storagePath   String   // path within Supabase Storage bucket
+  publicUrl     String
+  width         Int?
+  height        Int?
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  collectible Collectible @relation(fields: [collectibleId], references: [id], onDelete: Cascade)
+
+  @@index([collectibleId])
+  @@map("images")
+}
+
+// AI Vision output, decoupled from Image so re-analysis keeps history
+model ImageAnalysis {
+  id              String   @id @default(uuid()) @db.Uuid
+  collectibleId   String?  @db.Uuid
+  userId          String   @db.Uuid
+  imageUrl        String
+  identification  String
+  category        CollectibleCategory?
+  estimatedRarity String?
+  condition       String?
+  authenticity    String
+  historicalNote  String?
+  valueRangeLow   Decimal? @db.Decimal(12, 2)
+  valueRangeHigh  Decimal? @db.Decimal(12, 2)
+  confidenceScore Int      // 0-100
+  interestingFact String?
+  similarItems    Json?    // array of { title, note }
+  rawModelOutput  Json
+  createdAt       DateTime @default(now())
+
+  collectible Collectible? @relation(fields: [collectibleId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("image_analyses")
+}
+
+// ──────────────────────────────────────────────────────────────
+// AI CHAT
+// ──────────────────────────────────────────────────────────────
+
+model AIChat {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  title     String   @default("New chat")
+  isPinned  Boolean  @default(false)
+  branchedFromCheckpointId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+  checkpoints ConversationCheckpoint[]
+
+  @@index([userId])
+  @@index([userId, isPinned])
+  @@map("ai_chats")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @db.Uuid
+  role      ChatRole
+  content   String
+  imageUrls String[] @default([])
+  metadata  Json? // memory facts surfaced, citations, tool calls
+  createdAt DateTime @default(now())
+
+  chat AIChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@map("chat_messages")
+}
+
+// ──────────────────────────────────────────────────────────────
+// SEARCH + MARKET
+// ──────────────────────────────────────────────────────────────
+
+model SavedSearch {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  query     String
+  filters   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_searches")
+}
+
+model MarketInsight {
+  id           String   @id @default(uuid()) @db.Uuid
+  category     CollectibleCategory?
+  headline     String
+  summary      String
+  sentiment    String? // bullish / bearish / neutral
+  changePct    Decimal? @db.Decimal(6, 2)
+  source       String?
+  isOpportunity Boolean @default(false)
+  isRisk       Boolean  @default(false)
+  publishedAt  DateTime @default(now())
+
+  @@index([category])
+  @@map("market_insights")
+}
+
+// ──────────────────────────────────────────────────────────────
+// COLLECTOR MEMORY — single source of truth for personalization
+// ──────────────────────────────────────────────────────────────
+
+model CollectorMemory {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  key        String       // e.g. "favorite_category", "budget", "preferred_grading"
+  value      Json         // flexible: string, number, boolean, array
+  label      String       // human readable: "Favorite Category"
+  source     MemorySource
+  confidence Int          @default(80) // 0-100
+  isPinned   Boolean      @default(false)
+  isVerified Boolean      @default(false) // user explicitly confirmed this is correct
+  isLocked   Boolean      @default(false) // locked memories cannot be overwritten automatically
+  isArchived Boolean      @default(false) // "forgotten" but kept for audit
+  learnedAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@map("collector_memories")
+}
+
+enum MemorySuggestionStatus {
+  PENDING
+  ACCEPTED
+  IGNORED
+  NEVER_ASK
+}
+
+model MemorySuggestion {
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String                 @db.Uuid
+  suggestedKey    String
+  suggestedLabel  String
+  suggestedValue  Json
+  reason          String
+  status          MemorySuggestionStatus @default(PENDING)
+  createdAt       DateTime               @default(now())
+  resolvedAt      DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("memory_suggestions")
+}
+
+// ──────────────────────────────────────────────────────────────
+// COLLECTOR DNA + EVOLUTION REPLAY
+// ──────────────────────────────────────────────────────────────
+
+model DNASnapshot {
+  id                   String              @id @default(uuid()) @db.Uuid
+  userId               String              @db.Uuid
+  dnaScore             Int
+  primaryType          CollectorArchetype
+  secondaryType        CollectorArchetype?
+  traits               Json                // { name: string, score: number }[]
+  riskProfile          RiskProfile
+  portfolioHealth      Int
+  collectionValue      Decimal             @db.Decimal(14, 2)
+  favoriteCategory     CollectibleCategory?
+  knowledgeScore       Int
+  researchScore        Int
+  patienceScore        Int
+  marketAwareness      Int
+  diversification      Int
+  collectorSummary     String
+  achievementsUnlocked String[]            @default([])
+  recommendations      String[]            @default([])
+  memorySnapshot       Json                // denormalized memory state at this time
+  activityReason       String              // what triggered this snapshot
+  createdAt            DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("dna_snapshots")
+}
+
+model Achievement {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  key         String   // e.g. "research_master"
+  title       String
+  description String
+  icon        String   // lucide icon name
+  progress    Int      @default(0) // 0-100
+  unlockedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@map("achievements")
+}
+
+model Goal {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @db.Uuid
+  title       String
+  description String?
+  status      GoalStatus @default(IN_PROGRESS)
+  progress    Int        @default(0)
+  targetValue Int?
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("goals")
+}
+
+// ──────────────────────────────────────────────────────────────
+// LEGACY REPORT
+// ──────────────────────────────────────────────────────────────
+
+model LegacyReport {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  periodStart  DateTime
+  periodEnd    DateTime
+  reportData   Json     // fully materialized report sections (see types/legacy.ts)
+  pdfStoragePath String?
+  shareCardUrl String?
+  generatedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("legacy_reports")
+}
+
+// ──────────────────────────────────────────────────────────────
+// VISUAL PROVENANCE TIMELINE
+// ──────────────────────────────────────────────────────────────
+
+enum TimelineEventType {
+  FIRST_UPLOAD
+  IMAGE_REANALYSIS
+  CONDITION_UPDATED
+  CONFIDENCE_CHANGED
+  COLLECTION_ADDED
+  COLLECTION_UPDATED
+  OWNERSHIP_CHANGED
+  WISHLIST_ADDED
+  WISHLIST_REMOVED
+  MARKET_VALUE_UPDATED
+  AUTHENTICATION_UPDATED
+  MEMORY_IMPACT
+  DNA_IMPACT
+  CONVERSATION_REFERENCED
+  LEGACY_REPORT_GENERATED
+  GOAL_CONTRIBUTION
+  ACHIEVEMENT_CONTRIBUTION
+  MANUAL_NOTE
+}
+
+model CollectibleTimelineEvent {
+  id              String            @id @default(uuid()) @db.Uuid
+  collectibleId   String            @db.Uuid
+  userId          String            @db.Uuid
+  createdAt       DateTime          @default(now())
+  eventType       TimelineEventType
+  eventTitle      String
+  eventDescription String
+  imageId         String?           @db.Uuid
+  analysisId      String?           @db.Uuid
+  checkpointId    String?           @db.Uuid
+  conversationId  String?           @db.Uuid
+  memoryId        String?           @db.Uuid
+  dnaSnapshotId   String?           @db.Uuid
+  legacyReportId  String?           @db.Uuid
+  confidence      Int?
+  conditionScore  Int?
+  estimatedValueMin Decimal?        @db.Decimal(12, 2)
+  estimatedValueMax Decimal?        @db.Decimal(12, 2)
+  ownershipStatus String?
+  metadata        Json?
+
+  collectible Collectible @relation(fields: [collectibleId], references: [id], onDelete: Cascade)
+
+  @@index([collectibleId, createdAt])
+  @@index([userId, createdAt])
+  @@map("collectible_timeline_events")
+}
+
+// ──────────────────────────────────────────────────────────────
+// CONVERSATION TIME TRAVEL + WHY I CHANGED
+// ──────────────────────────────────────────────────────────────
+
+model ConversationCheckpoint {
+  id                  String   @id @default(uuid()) @db.Uuid
+  chatId              String   @db.Uuid
+  userId              String   @db.Uuid
+  messageId           String?  @db.Uuid
+  createdAt           DateTime @default(now())
+
+  checkpointTitle       String
+  checkpointDescription String
+
+  memoryBefore   Json
+  memoryAfter    Json
+  dnaBefore      Json
+  dnaAfter       Json
+  collectionBefore Json?
+  collectionAfter  Json?
+  goalsBefore    Json?
+  goalsAfter     Json?
+
+  achievementsUnlocked String[] @default([])
+  activitySummary       String
+  aiSummary             String
+  confidence             Int
+  sources                Json
+  reason                 String
+  branchParentId         String?  @db.Uuid
+  metadata               Json?
+
+  // Why I Changed extension
+  changeReasoning     String?
+  changeEvidence      Json?
+  evidenceSources     Json?
+  reasoningSteps      Json?
+  explanationVersion  Int      @default(1)
+  reviewStatus        String   @default("auto")
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      AIChat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  reasoning AIReasoning?
+
+  @@index([chatId])
+  @@index([userId, createdAt])
+  @@map("conversation_checkpoints")
+}
+
+model AIReasoning {
+  id               String   @id @default(uuid()) @db.Uuid
+  checkpointId     String   @unique @db.Uuid
+  createdAt        DateTime @default(now())
+
+  reason            String
+  evidence          Json
+  confidence        Int
+  memoryImpact      Json
+  dnaImpact         Json
+  collectionImpact  Json?
+  goalImpact        Json?
+  achievementImpact Json?
+  sources           Json
+  modelVersion      String
+
+  checkpoint ConversationCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@map("ai_reasonings")
+}
+
+// ──────────────────────────────────────────────────────────────
+// SYSTEM
+// ──────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Settings {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @unique @db.Uuid
+  theme               String   @default("dark")
+  emailNotifications  Boolean  @default(true)
+  pushNotifications   Boolean  @default(true)
+  marketAlerts        Boolean  @default(true)
+  memoryEnabled       Boolean  @default(true)
+  dataSharingAnalytics Boolean @default(true)
+  preferredLanguage   String   @default("en")
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+model ActivityLog {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @db.Uuid
+  type      ActivityType
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("activity_logs")
+}

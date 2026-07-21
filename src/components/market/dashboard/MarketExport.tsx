@@ -1,0 +1,128 @@
+"use client";
+
+import { Download } from "@/components/ui/icons";
+import type { MarketDashboard, MarketExportFormat } from "@/types/market";
+
+interface Props {
+  dashboard: MarketDashboard;
+}
+
+export function MarketExportButton({ dashboard }: Props) {
+  function handleExport(format: MarketExportFormat) {
+    let content: string;
+    let filename: string;
+    let mimeType: string;
+
+    switch (format) {
+      case "json":
+        content = JSON.stringify(dashboard, null, 2);
+        filename = `market-snapshot-${new Date().toISOString().slice(0, 10)}.json`;
+        mimeType = "application/json";
+        break;
+      case "csv":
+        content = generateCSV(dashboard);
+        filename = `portfolio-report-${new Date().toISOString().slice(0, 10)}.csv`;
+        mimeType = "text/csv";
+        break;
+      case "markdown":
+        content = generateMarkdown(dashboard);
+        filename = `market-report-${new Date().toISOString().slice(0, 10)}.md`;
+        mimeType = "text/markdown";
+        break;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      {(["json", "csv", "markdown"] as const).map((fmt) => (
+        <button
+          key={fmt}
+          onClick={() => handleExport(fmt)}
+          className="flex items-center gap-1 rounded-lg bg-white/5 px-2 py-1 text-[10px] font-medium text-gray-400 transition hover:bg-white/10 hover:text-gray-300"
+        >
+          <Download className="h-3 w-3" strokeWidth={2} />
+          {fmt.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function generateCSV(dashboard: MarketDashboard): string {
+  const lines: string[] = [];
+  lines.push("Section,Key,Value");
+  lines.push(`Portfolio,Total Purchase Price,$${dashboard.valuation.totalPurchasePrice.toLocaleString()}`);
+  lines.push(`Portfolio,Total Estimated Value,$${dashboard.valuation.totalEstimatedValue.toLocaleString()}`);
+  lines.push(`Portfolio,Gain/Loss,$${dashboard.valuation.totalGainLoss.toLocaleString()}`);
+  lines.push(`Portfolio,Gain/Loss %,${dashboard.valuation.totalGainLossPct.toFixed(1)}%`);
+  lines.push(`Portfolio,Confidence,${Math.round(dashboard.valuation.averageConfidence * 100)}%`);
+  lines.push(`Risk,Overall,${dashboard.risk.overallLevel}`);
+  lines.push(`Risk,Score,${dashboard.risk.overallScore}`);
+
+  for (const cat of dashboard.categoryPerformance) {
+    lines.push(`Category,${cat.label},${cat.changePct > 0 ? "+" : ""}${cat.changePct}%`);
+  }
+
+  for (const rec of dashboard.topRecommendations) {
+    lines.push(`Recommendation,${rec.type},${rec.title}`);
+  }
+
+  return lines.join("\n");
+}
+
+function generateMarkdown(dashboard: MarketDashboard): string {
+  const lines: string[] = [];
+  lines.push("# Market Intelligence Report");
+  lines.push(`\nGenerated: ${new Date().toISOString()}\n`);
+
+  lines.push("## Portfolio Valuation\n");
+  lines.push(`- **Total Purchase Price:** $${dashboard.valuation.totalPurchasePrice.toLocaleString()}`);
+  lines.push(`- **Total Estimated Value:** $${dashboard.valuation.totalEstimatedValue.toLocaleString()}`);
+  lines.push(`- **Gain/Loss:** $${dashboard.valuation.totalGainLoss.toLocaleString()} (${dashboard.valuation.totalGainLossPct.toFixed(1)}%)`);
+  lines.push(`- **Confidence:** ${Math.round(dashboard.valuation.averageConfidence * 100)}%`);
+  lines.push(`- **Market Coverage:** ${Math.round(dashboard.valuation.marketCoverage * 100)}%`);
+
+  lines.push("\n## Risk Assessment\n");
+  lines.push(`- **Overall Risk:** ${dashboard.risk.overallLevel} (${dashboard.risk.overallScore}/100)`);
+  for (const factor of Object.values(dashboard.risk.factors)) {
+    lines.push(`- ${factor.name}: ${factor.level} (${factor.score}) — ${factor.explanation}`);
+  }
+
+  if (dashboard.categoryPerformance.length > 0) {
+    lines.push("\n## Category Performance\n");
+    lines.push("| Category | Change | Items | Confidence |");
+    lines.push("|----------|--------|-------|------------|");
+    for (const cat of dashboard.categoryPerformance) {
+      lines.push(`| ${cat.label} | ${cat.changePct > 0 ? "+" : ""}${cat.changePct}% | ${cat.itemCount} | ${Math.round(cat.confidence * 100)}% |`);
+    }
+  }
+
+  if (dashboard.topRecommendations.length > 0) {
+    lines.push("\n## Recommendations\n");
+    for (const rec of dashboard.topRecommendations) {
+      lines.push(`### ${rec.title}\n`);
+      lines.push(`- **Type:** ${rec.type}`);
+      lines.push(`- **Signal:** ${rec.signal}`);
+      lines.push(`- **Confidence:** ${Math.round(rec.confidence * 100)}%`);
+      lines.push(`- ${rec.explanation}\n`);
+    }
+  }
+
+  if (dashboard.opportunities.length > 0) {
+    lines.push("\n## Opportunities\n");
+    for (const opp of dashboard.opportunities) {
+      lines.push(`- **${opp.title}** — ${opp.explanation}`);
+    }
+  }
+
+  lines.push("\n---\n*Generated by Vinci AI Market Intelligence*");
+  return lines.join("\n");
+}

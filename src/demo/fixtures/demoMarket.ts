@@ -1,0 +1,85 @@
+import type { MarketInsight } from "@/types/market";
+
+function insight(partial: Partial<MarketInsight> & Pick<MarketInsight, "id" | "headline" | "summary">): MarketInsight {
+  return {
+    category: null,
+    sentiment: "neutral",
+    changePct: null,
+    source: "Demonstration data",
+    isOpportunity: false,
+    isRisk: false,
+    publishedAt: new Date().toISOString(),
+    ...partial,
+  };
+}
+
+export const demoMarket: MarketInsight[] = [
+  insight({
+    id: "dm-1",
+    category: "TRADING_CARD",
+    headline: "Vintage Pokémon holo cards up 14% this quarter",
+    summary: "Sustained demand for PSA 9+ vintage holos continues to outpace modern sealed product.",
+    sentiment: "bullish",
+    changePct: 14,
+    isOpportunity: true,
+    publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-2",
+    category: "COMIC",
+    headline: "Vintage comics showing early momentum",
+    summary: "Search volume for Silver Age comics has grown steadily — early signal, not yet reflected in prices.",
+    sentiment: "bullish",
+    changePct: 6,
+    isOpportunity: true,
+    publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-3",
+    category: "SPORTS_CARD",
+    headline: "Basketball rookie cards cooling slightly",
+    summary: "After a strong run, basketball rookie cards have plateaued; some graded copies are softening in price.",
+    sentiment: "bearish",
+    changePct: -3,
+    isRisk: true,
+    publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-4",
+    category: "WATCH",
+    headline: "Luxury watch market remains stable",
+    summary: "Vintage Rolex and Patek Philippe references continue to hold value with low volatility.",
+    sentiment: "neutral",
+    changePct: 1,
+    publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-5",
+    category: "SNEAKER",
+    headline: "Limited edition sneakers seeing renewed interest",
+    summary: "Nike SB Dunk collaborations from 2020-2022 are appreciating as supply dries up.",
+    sentiment: "bullish",
+    changePct: 8,
+    isOpportunity: true,
+    publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-6",
+    category: "COIN",
+    headline: "Gold coin premiums steady despite metal price volatility",
+    summary: "Collector premiums on rare date gold coins remain strong, decoupled from spot price movements.",
+    sentiment: "neutral",
+    changePct: 2,
+    publishedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  insight({
+    id: "dm-7",
+    category: "FIGURE",
+    headline: "Vintage action figures seeing price corrections",
+    summary: "Some graded vintage figures coming back to earth after pandemic-era spikes.",
+    sentiment: "bearish",
+    changePct: -5,
+    isRisk: true,
+    publishedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+];
