@@ -10,7 +10,6 @@ import { computeMemoryOverview, groupByCategory, computeMemoryHealth } from "./m
 import { buildMemoryGraph } from "./memoryGraphService";
 import { listPendingSuggestions } from "./memorySuggestionService";
 import { prisma } from "@/lib/prisma";
-
 import { demoProfile } from "@/demo/fixtures/demoProfile";
 import { demoCollection } from "@/demo/fixtures/demoCollection";
 import { demoDNA } from "@/demo/fixtures/demoDNA";
@@ -23,8 +22,7 @@ import { demoGoals } from "@/demo/fixtures/demoGoals";
 import { demoMarket } from "@/demo/fixtures/demoMarket";
 import { demoLegacy } from "@/demo/fixtures/demoLegacy";
 import { demoChats } from "@/demo/fixtures/demoChats";
-
-import type { CollectorDNA } from "@/types/dna";
+import type { CollectorDNA, CollectorArchetype } from "@/types/dna";
 
 export interface CollectorProfileSummary {
   displayName: string;
@@ -70,6 +68,7 @@ export async function getCollectorProfile(
   }
 
   const [stats, dna] = await Promise.all([getCollectionStats(userId), computeCollectorDNA(userId)]);
+
   return {
     displayName: "Collector",
     collectorSince: new Date().getFullYear().toString(),
@@ -101,6 +100,7 @@ export async function getCollectionSummary(userId: string, demo: boolean) {
       acc[c.category] = (acc[c.category] ?? 0) + 1;
       return acc;
     }, {});
+
     return {
       total: demoProfile.collectionSize,
       totalValue: demoProfile.collectionValue,
@@ -113,6 +113,7 @@ export async function getCollectionSummary(userId: string, demo: boolean) {
       )[0],
     };
   }
+
   return getCollectionStats(userId);
 }
 
@@ -153,12 +154,15 @@ export async function getMemoryTimeline(userId: string, demo: boolean) {
       createdAt: f.learnedAt,
     }));
   }
+
   const checkpoints = await listCheckpointsForUser(userId, 100);
+
   return checkpoints
     .filter((c) => Array.isArray(c.memoryAfter) && (c.memoryAfter as unknown[]).length >= 0)
     .flatMap((c) => {
       const before = (c.memoryBefore as { key: string; value: unknown }[]) ?? [];
       const after = (c.memoryAfter as { key: string; label: string; value: unknown }[]) ?? [];
+
       return after
         .filter((m) => {
           const prev = before.find((b) => b.key === m.key);
@@ -189,9 +193,7 @@ function describeActivity(type: string, metadata: Record<string, unknown> | null
     case "CHAT_MESSAGE":
       return "Chatted with Vinci AI";
     case "MEMORY_UPDATED":
-      return `Collector Memory updated${
-        metadata?.keys ? ` (${(metadata.keys as string[]).join(", ")})` : ""
-      }`;
+      return `Collector Memory updated${metadata?.keys ? ` (${(metadata.keys as string[]).join(", ")})` : ""}`;
     case "DNA_SNAPSHOT_CREATED":
       return "Collector DNA updated";
     case "REPORT_GENERATED":
@@ -203,7 +205,9 @@ function describeActivity(type: string, metadata: Record<string, unknown> | null
 
 export async function getActivityFeed(userId: string, demo: boolean, limit = 10) {
   if (demo) return demoActivity.slice(0, limit);
+
   const real = await getRecentActivity(userId, limit);
+
   return real.map((a) => ({
     id: a.id,
     type: a.type,
@@ -212,14 +216,28 @@ export async function getActivityFeed(userId: string, demo: boolean, limit = 10)
   }));
 }
 
+// ✅ FIX APPLIED HERE: Normalizes both demo and DB snapshots to the exact same shape
 export async function getDNASnapshots(userId: string, demo: boolean) {
-  if (demo) return demoReplay;
-  return listDNASnapshots(userId);
+  if (demo) {
+    return demoReplay.snapshots.map((s) => ({
+      dnaScore: s.scores.dnaScore,
+      primaryType: s.primaryType as CollectorArchetype,
+    }));
+  }
+
+  const snapshots = await listDNASnapshots(userId);
+
+  return snapshots.map((s) => ({
+    dnaScore: s.dnaScore,
+    primaryType: s.primaryType as CollectorArchetype,
+  }));
 }
 
 export async function getAchievements(userId: string, demo: boolean) {
   if (demo) return demoAchievements;
+
   const rows = await prisma.achievement.findMany({ where: { userId, unlockedAt: { not: null } } });
+
   return rows.map((r) => ({
     id: r.id,
     key: r.key,
@@ -233,7 +251,9 @@ export async function getAchievements(userId: string, demo: boolean) {
 
 export async function getGoals(userId: string, demo: boolean) {
   if (demo) return demoGoals;
+
   const rows = await prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
+
   return rows.map((g) => ({
     id: g.id,
     title: g.title,
@@ -245,7 +265,9 @@ export async function getGoals(userId: string, demo: boolean) {
 
 export async function getMarketPulse(demo: boolean) {
   if (demo) return demoMarket;
+
   const rows = await prisma.marketInsight.findMany({ orderBy: { publishedAt: "desc" }, take: 10 });
+
   return rows.map((r) => ({
     id: r.id,
     category: r.category,
@@ -262,10 +284,12 @@ export async function getMarketPulse(demo: boolean) {
 
 export async function getLegacyReport(userId: string, demo: boolean) {
   if (demo) return demoLegacy;
+
   const row = await prisma.legacyReport.findFirst({
     where: { userId },
     orderBy: { generatedAt: "desc" },
   });
+
   return row ? (row.reportData as object) : null;
 }
 

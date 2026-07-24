@@ -1,14 +1,17 @@
 import { openai, AI_MODELS } from "@/lib/openai";
-import type { LegacyDataBundle } from "./legacyAnalytics";
-import type { EvidenceBundle, LegacyNarrativeSection } from "@/types/legacy";
+import type {
+  LegacyDataBundle,
+  EvidenceBundle,
+  LegacyNarrativeSection,
+} from "@/types/legacy";
 
 const SYSTEM = `You write sections of a premium AI Collector Legacy Report for Vinci AI.
 STRICT RULES:
-1. Every sentence must be supported by a fact in allowedFacts.
-2. Never invent achievements, collectibles, memories, dates, or market values.
-3. If evidence is insufficient, say so rather than filling gaps.
-4. Second person ("you", "your"). Past tense for history, present for now.
-5. Plain prose, 2-4 sentences. No markdown, no emoji.`;
+Every sentence must be supported by a fact in allowedFacts.
+Never invent achievements, collectibles, memories, dates, or market values.
+If evidence is insufficient, say so rather than filling gaps.
+Second person ("you", "your"). Past tense for history, present for now.
+Plain prose, 2-4 sentences. No markdown, no emoji.`;
 
 async function narrateParagraph(section: string, evidence: EvidenceBundle, context: string): Promise<string> {
   const res = await openai.chat.completions.create({
@@ -36,7 +39,6 @@ export interface GeneratedNarrative {
 export async function generateNarrative(bundle: LegacyDataBundle): Promise<GeneratedNarrative> {
   const { dna, facts, portfolio, achievements, snapshotCount, cover } = bundle;
   const unlocked = achievements.filter((a) => a.isUnlocked);
-
   const baseFacts = [
     `DNA Score: ${dna.dnaScore}`,
     `Primary archetype: ${dna.primaryType}`,
@@ -102,7 +104,7 @@ export async function generateNarrative(bundle: LegacyDataBundle): Promise<Gener
       messages: [
         {
           role: "system",
-          content: `${SYSTEM}\nWrite a personal letter from Vinci AI. Format: "Dear Collector,\\n[3-4 sentences]\\n\\nWith respect,\\nVinci AI"`,
+          content: `${SYSTEM}\nWrite a personal letter from Vinci AI. Format: "Dear Collector,\n[3-4 sentences]\n\nWith respect,\nVinci AI"`,
         },
         { role: "user", content: `Allowed facts: ${baseFacts.join(" | ")}` },
       ],
@@ -127,6 +129,7 @@ export async function generateNarrative(bundle: LegacyDataBundle): Promise<Gener
   const aiLetter =
     letterRes.choices[0]?.message?.content?.trim() ??
     "Dear Collector,\n\nYour journey with Vinci AI reflects genuine growth.\n\nWith respect,\nVinci AI";
+
   const recRaw = recRes.choices[0]?.message?.content;
   const nextChapter: string[] = recRaw ? (JSON.parse(recRaw).recommendations ?? []) : [];
 

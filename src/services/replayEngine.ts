@@ -3,13 +3,17 @@ import { buildCompassHistory } from "./collectorCompass";
 import { detectMilestones, generateReplayStory } from "./replayAnalytics";
 import type { ReplayFrame, ReplayManifest } from "@/types/replay";
 
-export async function buildReplayManifest(userId: string): Promise<ReplayManifest> {
+export async function buildReplayManifest(
+  userId: string
+): Promise<ReplayManifest> {
   const snapshots = await prisma.dNASnapshot.findMany({
     where: { userId },
-    orderBy: { createdAt: "asc" },
+    orderBy: {
+      createdAt: "asc",
+    },
   });
 
-  if (snapshots.length === 0) {
+  if (!snapshots.length) {
     return {
       userId,
       frames: [],
@@ -24,36 +28,67 @@ export async function buildReplayManifest(userId: string): Promise<ReplayManifes
   }
 
   const frames: ReplayFrame[] = await Promise.all(
-    snapshots.map(async (snap, i) => {
-      const scores = (snap.scores ?? {}) as Record<string, number>;
-      const prev = i > 0 ? ((snapshots[i - 1]!.scores ?? {}) as Record<string, number>) : null;
-      const delta = prev
-        ? Math.round((scores.dnaScore ?? 50) - (prev.dnaScore ?? 50))
-        : null;
+    snapshots.map(async (snap, index) => {
+      const previous = index > 0 ? snapshots[index - 1] : null;
 
-      const [convCount, memCount, collCount, cpCount] = await Promise.all([
-        prisma.aIChat.count({ where: { userId, createdAt: { lte: snap.createdAt } } }),
-        prisma.collectorMemory.count({ where: { userId, learnedAt: { lte: snap.createdAt } } }),
-        prisma.collectible.count({ where: { userId, createdAt: { lte: snap.createdAt } } }),
+      const scores = {
+        dnaScore: snap.dnaScore,
+        knowledgeScore: snap.knowledgeScore,
+        researchScore: snap.researchScore,
+        patienceScore: snap.patienceScore,
+        marketAwareness: snap.marketAwareness,
+        diversification: snap.diversification,
+        portfolioHealth: snap.portfolioHealth,
+      };
+
+      const [
+        conversationCount,
+        memoryCount,
+        collectionSize,
+        checkpointCount,
+      ] = await Promise.all([
+        prisma.aIChat.count({
+          where: {
+            userId,
+            createdAt: { lte: snap.createdAt },
+          },
+        }),
+        prisma.collectorMemory.count({
+          where: {
+            userId,
+            learnedAt: { lte: snap.createdAt },
+          },
+        }),
+        prisma.collectible.count({
+          where: {
+            userId,
+            createdAt: { lte: snap.createdAt },
+          },
+        }),
         prisma.conversationCheckpoint.count({
-          where: { userId, createdAt: { lte: snap.createdAt } },
+          where: {
+            userId,
+            createdAt: { lte: snap.createdAt },
+          },
         }),
       ]);
 
       return {
-        index: i,
+        index,
         snapshotId: snap.id,
         createdAt: snap.createdAt.toISOString(),
-        dnaScore: Math.round(scores.dnaScore ?? 50),
+        dnaScore: snap.dnaScore,
         primaryType: snap.primaryType,
-        secondaryType: snap.secondaryType ?? null,
-        trigger: snap.trigger,
+        secondaryType: snap.secondaryType,
+        trigger: snap.activityReason ?? "Snapshot",
         scores,
-        conversationCount: convCount,
-        memoryCount: memCount,
-        collectionSize: collCount,
-        checkpointCount: cpCount,
-        delta,
+        conversationCount,
+        memoryCount,
+        collectionSize,
+        checkpointCount,
+        delta: previous
+          ? snap.dnaScore - previous.dnaScore
+          : null,
       };
     })
   );
@@ -62,20 +97,13 @@ export async function buildReplayManifest(userId: string): Promise<ReplayManifes
   const milestones = detectMilestones(frames);
   const storyNarration = await generateReplayStory(frames, milestones);
 
-  const pinnedSnaps = await prisma.dNASnapshot.findMany({
-    where: { userId, isPinned: true },
-    select: { id: true, createdAt: true, trigger: true },
-  });
-
-  const bookmarks = pinnedSnaps
-    .map((p) => ({
-      id: `bookmark-${p.id}`,
-      frameIndex: frames.findIndex((f) => f.snapshotId === p.id),
-      label: p.trigger,
-      note: null,
-      createdAt: p.createdAt.toISOString(),
-    }))
-    .filter((b) => b.frameIndex >= 0);
+  const bookmarks = snapshots.map((snap) => ({
+    id: `bookmark-${snap.id}`,
+    frameIndex: frames.findIndex((f) => f.snapshotId === snap.id),
+    label: snap.activityReason ?? "Snapshot",
+    note: null,
+    createdAt: snap.createdAt.toISOString(),
+  }));
 
   return {
     userId,
@@ -87,7 +115,10 @@ export async function buildReplayManifest(userId: string): Promise<ReplayManifes
     totalFrames: frames.length,
     dateRange:
       frames.length > 0
-        ? { from: frames[0]!.createdAt, to: frames[frames.length - 1]!.createdAt }
+        ? {
+            from: frames[0]!.createdAt,
+            to: frames[frames.length - 1]!.createdAt,
+          }
         : null,
   };
 }

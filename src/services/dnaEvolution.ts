@@ -21,16 +21,25 @@ export async function getDNAEvolutionTimeline(
   });
 
   return snapshots.map((snap, i) => {
-    const scores = (snap.scores ?? {}) as Record<string, number>;
-    const prev = i > 0 ? ((snapshots[i - 1]!.scores ?? {}) as Record<string, number>) : null;
-    const delta = prev ? Math.round((scores.dnaScore ?? 50) - (prev.dnaScore ?? 50)) : null;
+    const scores = {
+      dnaScore: snap.dnaScore,
+      knowledgeScore: snap.knowledgeScore,
+      researchScore: snap.researchScore,
+      marketAwareness: snap.marketAwareness,
+      diversification: snap.diversification,
+      patienceScore: snap.patienceScore,
+      portfolioHealth: snap.portfolioHealth,
+    };
+
+    const prev = i > 0 ? snapshots[i - 1] : null;
+    const delta = prev == null ? null : Math.round(snap.dnaScore - prev.dnaScore);
 
     return {
       id: snap.id,
       createdAt: snap.createdAt.toISOString(),
-      dnaScore: Math.round(scores.dnaScore ?? 50),
+      dnaScore: snap.dnaScore,
       primaryType: snap.primaryType,
-      trigger: snap.trigger,
+      trigger: snap.activityReason,
       delta,
       scores,
     };

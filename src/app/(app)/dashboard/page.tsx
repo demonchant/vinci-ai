@@ -99,7 +99,10 @@ export default async function DashboardPage() {
           <RecentActivityCard activity={activity} />
 
           <MemoryWidgetCard facts={memory.facts} />
-          <DNAEvolutionCard snapshots={snapshots} projected={dna.compass.projected} />
+          
+          {/* ✅ FIX: Use projectedArchetype with a safe fallback to primaryType */}
+          <DNAEvolutionCard snapshots={snapshots} projected={dna.projectedArchetype ?? dna.primaryType} />
+          
           <AchievementsCard achievements={achievements} />
           <GoalsCard goals={goals} />
 

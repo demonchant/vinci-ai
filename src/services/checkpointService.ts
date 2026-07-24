@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import type { CollectorDNA } from "@/types/dna";
 import type { CollectorMemoryFact } from "@/types/memory";
 import { generateReasoning } from "./reasoningEngine";
@@ -23,7 +24,10 @@ function memoryLite(facts: CollectorMemoryFact[]) {
  * no checkpoint at all, per the spec ("not every message creates a
  * checkpoint, only meaningful changes").
  */
-function diffMemory(before: ReturnType<typeof memoryLite>, after: ReturnType<typeof memoryLite>) {
+function diffMemory(
+  before: ReturnType<typeof memoryLite>,
+  after: ReturnType<typeof memoryLite>
+) {
   const beforeMap = new Map(before.map((f) => [f.key, f.value]));
   const changed: { key: string; label: string; before: unknown; after: unknown }[] = [];
   for (const fact of after) {
@@ -73,7 +77,7 @@ export async function maybeCreateCheckpoint(inputs: CheckpointInputs) {
   const memAfter = memoryLite(inputs.memoryAfter);
   const dnaBeforeLite = dnaLite(inputs.dnaBefore);
   const dnaAfterLite = dnaLite(inputs.dnaAfter);
-
+  
   const memoryChanges = diffMemory(memBefore, memAfter);
   const dnaChanges = diffDNA(dnaBeforeLite, dnaAfterLite);
 
@@ -86,6 +90,13 @@ export async function maybeCreateCheckpoint(inputs: CheckpointInputs) {
       ? `Collector Memory updated: ${memoryChanges.map((c) => c.label).join(", ")}`
       : `Collector DNA updated: ${dnaChanges.map((c) => c.metric).join(", ")}`;
 
+  // Safely serialize and cast to Prisma.InputJsonValue to prevent JSON type mismatches
+  const memoryBeforeJson = JSON.parse(JSON.stringify(memBefore)) as Prisma.InputJsonValue;
+  const memoryAfterJson = JSON.parse(JSON.stringify(memAfter)) as Prisma.InputJsonValue;
+  const dnaBeforeJson = JSON.parse(JSON.stringify(dnaBeforeLite)) as Prisma.InputJsonValue;
+  const dnaAfterJson = JSON.parse(JSON.stringify(dnaAfterLite)) as Prisma.InputJsonValue;
+  const sourcesJson = JSON.parse(JSON.stringify(inputs.sources)) as Prisma.InputJsonValue;
+
   const checkpoint = await prisma.conversationCheckpoint.create({
     data: {
       chatId: inputs.chatId,
@@ -93,14 +104,14 @@ export async function maybeCreateCheckpoint(inputs: CheckpointInputs) {
       messageId: inputs.messageId,
       checkpointTitle: title,
       checkpointDescription: inputs.activitySummary,
-      memoryBefore: memBefore,
-      memoryAfter: memAfter,
-      dnaBefore: dnaBeforeLite,
-      dnaAfter: dnaAfterLite,
+      memoryBefore: memoryBeforeJson,
+      memoryAfter: memoryAfterJson,
+      dnaBefore: dnaBeforeJson,
+      dnaAfter: dnaAfterJson,
       activitySummary: inputs.activitySummary,
       aiSummary: "", // filled in below once reasoning is generated
       confidence: 0,
-      sources: inputs.sources,
+      sources: sourcesJson,
       reason: inputs.triggerReason,
     },
   });
@@ -117,7 +128,10 @@ export async function maybeCreateCheckpoint(inputs: CheckpointInputs) {
 
   const updated = await prisma.conversationCheckpoint.update({
     where: { id: checkpoint.id },
-    data: { aiSummary: reasoning.reason, confidence: reasoning.confidence },
+    data: { 
+      aiSummary: reasoning.reason, 
+      confidence: reasoning.confidence 
+    },
   });
 
   return { checkpoint: updated, reasoning };

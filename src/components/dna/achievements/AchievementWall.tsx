@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { AchievementCard } from "./AchievementCard";
 
@@ -31,7 +30,7 @@ export function AchievementWall({ achievements }: { achievements: Achievement[] 
   const totalXP = achievements.reduce((s, a) => s + a.xp, 0);
 
   return (
-    <div>
+    <div className="space-y-4">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs text-gray-500">
           {achievements.filter((a) => a.isUnlocked).length} / {achievements.length} unlocked ·{" "}
@@ -51,10 +50,14 @@ export function AchievementWall({ achievements }: { achievements: Achievement[] 
           ))}
         </div>
       </div>
-
       <div className="grid gap-3 sm:grid-cols-2">
-        {filtered.map((a, i) => (
-          <AchievementCard key={a.key} {...a} index={i} />
+        {/* ✅ FIX APPLIED HERE: Destructure 'key' to prevent prop collision */}
+        {filtered.map(({ key, ...achievement }, i) => (
+          <AchievementCard
+            key={key}
+            {...achievement}
+            index={i}
+          />
         ))}
       </div>
     </div>

@@ -1,5 +1,4 @@
 "use client";
-
 import { motion } from "framer-motion";
 import { Icon, type IconProps, type IconSize } from "./Icon";
 import { cn } from "@/lib/utils";
@@ -53,7 +52,6 @@ export function IconButton({
     solid: "bg-primary text-white hover:bg-primary/90 shadow-glow",
     outline: "border border-white/10 text-gray-200 hover:bg-white/5",
   };
-
   return (
     <button
       type={type}
@@ -168,7 +166,9 @@ export function AchievementIcon({
   unlocked?: boolean;
   className?: string;
 }) {
-  const ResolvedIcon = icon ?? ACHIEVEMENT_ICONS[tier];
+  // ✅ FIX APPLIED HERE: Robust fallback to satisfy strict TypeScript noUncheckedIndexedAccess
+  const ResolvedIcon = icon ?? ACHIEVEMENT_ICONS[tier ?? "gold"] ?? Trophy;
+  
   return (
     <motion.span
       whileHover={{ scale: 1.05 }}

@@ -80,7 +80,7 @@ export async function computeDNAStability(userId: string): Promise<DNAStability>
     where: { userId },
     orderBy: { createdAt: "desc" },
     take: 10,
-    select: { scores: true },
+    select: { dnaScore: true },
   });
 
   if (snapshots.length < 2) {
@@ -92,7 +92,7 @@ export async function computeDNAStability(userId: string): Promise<DNAStability>
     };
   }
 
-  const scores = snapshots.map((s) => ((s.scores as any)?.dnaScore ?? 50) as number);
+  const scores = snapshots.map((s) => s.dnaScore ?? 50);
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
   const variance =
     scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length;

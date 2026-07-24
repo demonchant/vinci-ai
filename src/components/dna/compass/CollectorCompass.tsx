@@ -1,5 +1,4 @@
 "use client";
-
 import { motion } from "framer-motion";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import type { CompassPosition } from "@/types/replay";
@@ -21,14 +20,12 @@ export function CollectorCompass({
     );
   }
 
-  const currentData = Object.entries(current.axes).map(([axis, value]) => ({
+  // ✅ FIX APPLIED HERE: Merge datasets into one array for Recharts
+  const chartData = Object.entries(current.axes).map(([axis, value]) => ({
     axis,
-    score: value,
+    current: value,
+    previous: previous?.axes[axis as keyof typeof previous.axes] ?? 0,
   }));
-
-  const previousData = previous
-    ? Object.entries(previous.axes).map(([axis, value]) => ({ axis, score: value }))
-    : null;
 
   return (
     <div className="space-y-3">
@@ -56,7 +53,7 @@ export function CollectorCompass({
 
       <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={currentData}>
+          <RadarChart data={chartData}>
             <defs>
               <linearGradient id="compassFill" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#00D4FF" stopOpacity={0.5} />
@@ -65,31 +62,28 @@ export function CollectorCompass({
             </defs>
             <PolarGrid stroke="rgba(255,255,255,0.05)" />
             <PolarAngleAxis dataKey="axis" tick={{ fill: "#71717A", fontSize: 9 }} />
-            {previousData && (
-              <Radar
-                name="Previous"
-                dataKey="score"
-                data={previousData}
-                stroke="rgba(255,255,255,0.1)"
-                fill="transparent"
-                strokeDasharray="3 3"
-                dot={false}
-                animationDuration={300}
-              />
-            )}
+            
+            {/* ✅ FIX APPLIED HERE: Use dataKey instead of passing a data prop */}
+            <Radar
+              name="Previous"
+              dataKey="previous"
+              stroke="rgba(255,255,255,0.2)"
+              fill="transparent"
+              strokeDasharray="3 3"
+              dot={false}
+            />
+            
             <Radar
               name="Current"
-              dataKey="score"
+              dataKey="current"
               stroke="#00D4FF"
               fill="url(#compassFill)"
               strokeWidth={2}
               dot={false}
-              animationDuration={400}
             />
           </RadarChart>
         </ResponsiveContainer>
       </div>
-
       {recentShift && <p className="text-[11px] text-gray-500">{recentShift.reason}</p>}
     </div>
   );

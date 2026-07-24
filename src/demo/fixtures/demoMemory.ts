@@ -8,10 +8,12 @@ function fact(
   pinned = false,
   verified = false
 ): CollectorMemoryFact {
-  const date = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+  // ✅ FIX APPLIED HERE: Removed .toISOString() so it returns a Date object, not a string
+  const date = new Date(Date.now() - daysAgo * 86_400_000);
+
   return {
     id: `demo-memory-${key}`,
-    key,
+    key: key as any,
     label,
     value,
     source: "CHAT",

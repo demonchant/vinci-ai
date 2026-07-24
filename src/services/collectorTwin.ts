@@ -18,23 +18,19 @@ export function buildCollectorTwin(
   dna: CollectorDNA
 ): CollectorTwinProfile {
   const owned = collectibles.filter((c) => c.status === "OWNED" || c.status === "PURCHASED");
-
   const favoriteCategories = inferFavoriteCategories(owned);
   const favoriteEras = inferFavoriteEras(owned);
   const favoriteBrands = inferFavoriteBrands(owned, memories);
   const favoriteArtists = inferFavoriteArtists(owned, memories);
-
   const buyingStyle = inferBuyingStyle(owned, memories);
   const riskDiscipline = inferRiskDiscipline(owned, dna);
   const researchDepth = inferResearchDepth(owned, memories, dna);
   const patience = inferPatience(owned);
   const decisionSpeed = inferDecisionSpeed(owned);
   const diversificationPreference = inferDiversification(owned, dna);
-  const budgetDiscipline = inferBudgetDiscipline(owned, memories);
-
+  const budgetDiscipline = inferBudgetDiscipline(owned, memories, dna);
   const philosophy = inferPhilosophy(dna, memories, owned);
   const collectionStrategy = inferStrategy(owned, dna);
-
   const dataPoints = owned.length + memories.length;
 
   return {
@@ -63,7 +59,6 @@ export function buildCollectorTwin(
 function inferFavoriteCategories(owned: Collectible[]): TwinPreference[] {
   const counts = new Map<CollectibleCategory, number>();
   for (const c of owned) counts.set(c.category, (counts.get(c.category) || 0) + 1);
-
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
@@ -83,7 +78,6 @@ function inferFavoriteEras(owned: Collectible[]): TwinPreference[] {
     const decade = `${Math.floor(c.year / 10) * 10}s`;
     eras.set(decade, (eras.get(decade) || 0) + 1);
   }
-
   return [...eras.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -101,12 +95,10 @@ function inferFavoriteBrands(owned: Collectible[], memories: CollectorMemoryFact
   for (const c of owned) {
     if (c.brand) brands.set(c.brand, (brands.get(c.brand) || 0) + 1);
   }
-
   const memBrands = memories.find((m) => m.key === "favorite_brands");
   if (memBrands && Array.isArray(memBrands.value)) {
     for (const b of memBrands.value) brands.set(String(b), (brands.get(String(b)) || 0) + 2);
   }
-
   return [...brands.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
@@ -128,7 +120,6 @@ function inferFavoriteArtists(owned: Collectible[], memories: CollectorMemoryFac
   if (memArtists && Array.isArray(memArtists.value)) {
     for (const a of memArtists.value) artists.set(String(a), (artists.get(String(a)) || 0) + 2);
   }
-
   return [...artists.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -144,36 +135,35 @@ function inferFavoriteArtists(owned: Collectible[], memories: CollectorMemoryFac
 function inferBuyingStyle(owned: Collectible[], memories: CollectorMemoryFact[]): TwinBehavior {
   const highValue = owned.filter((c) => (c.estimatedValue ?? 0) > 1000).length;
   const ratio = owned.length > 0 ? highValue / owned.length : 0;
-
-  const style = ratio > 0.5 ? "Premium buyer — favors high-value, high-quality pieces"
-    : ratio > 0.2 ? "Selective buyer — mixes accessible and premium pieces"
-    : "Volume collector — builds breadth across categories";
-
+  const style =
+    ratio > 0.5
+      ? "Premium buyer — favors high-value, high-quality pieces"
+      : ratio > 0.2
+      ? "Selective buyer — mixes accessible and premium pieces"
+      : "Volume collector — builds breadth across categories";
   const memStyle = memories.find((m) => m.key === "buying_habits");
-
   return {
     trait: "Buying Style",
     score: Math.round(ratio * 100),
     description: memStyle ? `${style}. Self-described: "${memStyle.value}"` : style,
     evidence: [`${highValue} of ${owned.length} items valued over $1,000`],
-    observedSince: owned[0]?.createdAt ?? new Date().toISOString(),
+    observedSince: owned[0] ? new Date(owned[0].createdAt).toISOString() : new Date().toISOString(),
   };
 }
 
 function inferRiskDiscipline(owned: Collectible[], dna: CollectorDNA): TwinBehavior {
   const unauthHighValue = owned.filter((c) => !c.isAuthenticated && (c.estimatedValue ?? 0) > 500).length;
   const riskScore = dna.wheel?.find((w) => w.axis === "Risk")?.score ?? 50;
-
   return {
     trait: "Risk Discipline",
     score: riskScore,
-    description: riskScore > 70 ? "Cautious — verifies before committing"
-      : riskScore > 40 ? "Balanced — accepts calculated risks"
-      : "Bold — comfortable with higher uncertainty",
-    evidence: [
-      `DNA Risk score: ${riskScore}`,
-      `${unauthHighValue} unauthenticated high-value items`,
-    ],
+    description:
+      riskScore > 70
+        ? "Cautious — verifies before committing"
+        : riskScore > 40
+        ? "Balanced — accepts calculated risks"
+        : "Bold — comfortable with higher uncertainty",
+    evidence: [`DNA Risk score: ${riskScore}`, `${unauthHighValue} unauthenticated high-value items`],
     observedSince: dna.computedAt,
   };
 }
@@ -181,13 +171,15 @@ function inferRiskDiscipline(owned: Collectible[], dna: CollectorDNA): TwinBehav
 function inferResearchDepth(owned: Collectible[], memories: CollectorMemoryFact[], dna: CollectorDNA): TwinBehavior {
   const researchScore = dna.wheel?.find((w) => w.axis === "Research")?.score ?? 50;
   const withNotes = owned.filter((c) => c.notes && c.notes.length > 20).length;
-
   return {
     trait: "Research Depth",
     score: researchScore,
-    description: researchScore > 70 ? "Deep researcher — thoroughly investigates before acting"
-      : researchScore > 40 ? "Moderate researcher — gathers key information"
-      : "Action-oriented — prefers experience over extended research",
+    description:
+      researchScore > 70
+        ? "Deep researcher — thoroughly investigates before acting"
+        : researchScore > 40
+        ? "Moderate researcher — gathers key information"
+        : "Action-oriented — prefers experience over extended research",
     evidence: [
       `DNA Research score: ${researchScore}`,
       `${withNotes} items with detailed notes`,
@@ -206,15 +198,17 @@ function inferPatience(owned: Collectible[]): TwinBehavior {
   const span = new Date(sorted[sorted.length - 1]!.purchasedAt!).getTime() - new Date(sorted[0]!.purchasedAt!).getTime();
   const avgGap = span / (sorted.length - 1) / (1000 * 60 * 60 * 24);
   const score = Math.min(100, Math.round(avgGap * 2));
-
   return {
     trait: "Patience",
     score,
-    description: avgGap > 60 ? "Very patient — waits for the right opportunity"
-      : avgGap > 20 ? "Moderate patience — steady acquisition pace"
-      : "Eager — acquires frequently when opportunities arise",
+    description:
+      avgGap > 60
+        ? "Very patient — waits for the right opportunity"
+        : avgGap > 20
+        ? "Moderate patience — steady acquisition pace"
+        : "Eager — acquires frequently when opportunities arise",
     evidence: [`Average ${Math.round(avgGap)} days between acquisitions`],
-    observedSince: sorted[0]!.purchasedAt!,
+    observedSince: sorted[0]!.purchasedAt ? new Date(sorted[0]!.purchasedAt).toISOString() : new Date().toISOString(),
   };
 }
 
@@ -224,9 +218,12 @@ function inferDecisionSpeed(owned: Collectible[]): TwinBehavior {
   return {
     trait: "Decision Speed",
     score: speed,
-    description: speed > 70 ? "Fast decision maker — acts quickly on opportunities"
-      : speed > 40 ? "Deliberate — takes time but doesn't over-analyze"
-      : "Methodical — prefers careful analysis before commitment",
+    description:
+      speed > 70
+        ? "Fast decision maker — acts quickly on opportunities"
+        : speed > 40
+        ? "Deliberate — takes time but doesn't over-analyze"
+        : "Methodical — prefers careful analysis before commitment",
     evidence: patience.evidence,
     observedSince: patience.observedSince,
   };
@@ -235,39 +232,42 @@ function inferDecisionSpeed(owned: Collectible[]): TwinBehavior {
 function inferDiversification(owned: Collectible[], dna: CollectorDNA): TwinBehavior {
   const categories = new Set(owned.map((c) => c.category)).size;
   const divScore = dna.diversificationScore ?? Math.min(100, categories * 15);
-
   return {
     trait: "Diversification Preference",
     score: divScore,
-    description: divScore > 70 ? "Broad collector — actively seeks variety"
-      : divScore > 40 ? "Focused with some breadth — concentrates with occasional exploration"
-      : "Specialist — deep focus on select categories",
+    description:
+      divScore > 70
+        ? "Broad collector — actively seeks variety"
+        : divScore > 40
+        ? "Focused with some breadth — concentrates with occasional exploration"
+        : "Specialist — deep focus on select categories",
     evidence: [`${categories} categories in collection`, `Diversification score: ${divScore}`],
     observedSince: dna.computedAt,
   };
 }
 
-function inferBudgetDiscipline(owned: Collectible[], memories: CollectorMemoryFact[]): TwinBehavior {
+function inferBudgetDiscipline(owned: Collectible[], memories: CollectorMemoryFact[], dna: CollectorDNA): TwinBehavior {
   const prices = owned.filter((c) => c.purchasePrice).map((c) => c.purchasePrice!);
   if (prices.length === 0) {
     return { trait: "Budget Discipline", score: 50, description: "Not enough purchase data.", evidence: [], observedSince: new Date().toISOString() };
   }
-
   const avg = prices.reduce((s, p) => s + p, 0) / prices.length;
   const budgetMem = memories.find((m) => m.key === "budget");
   const budgetDisciplineScore = dna.wheel?.find((w) => w.axis === "Budget Discipline")?.score ?? 50;
-
   return {
     trait: "Budget Discipline",
     score: budgetDisciplineScore,
-    description: budgetDisciplineScore > 70 ? "Disciplined — stays within defined ranges"
-      : budgetDisciplineScore > 40 ? "Flexible — generally mindful but makes exceptions"
-      : "Opportunistic — budget follows passion, not limits",
+    description:
+      budgetDisciplineScore > 70
+        ? "Disciplined — stays within defined ranges"
+        : budgetDisciplineScore > 40
+        ? "Flexible — generally mindful but makes exceptions"
+        : "Opportunistic — budget follows passion, not limits",
     evidence: [
       `Average purchase: $${Math.round(avg).toLocaleString()}`,
       ...(budgetMem ? [`Self-reported budget: ${budgetMem.value}`] : []),
     ],
-    observedSince: owned[0]?.createdAt ?? new Date().toISOString(),
+    observedSince: owned[0] ? new Date(owned[0].createdAt).toISOString() : new Date().toISOString(),
   };
 }
 
@@ -287,7 +287,6 @@ function inferPhilosophy(dna: CollectorDNA, memories: CollectorMemoryFact[], own
     PRESERVATIONIST: "Dedicated to protecting and preserving collectible heritage.",
     COMPETITIVE_COLLECTOR: "Motivated by the thrill of acquisition and competitive positioning.",
   };
-
   return {
     label: "Collector Philosophy",
     value: philosophies[archetype] ?? "Evolving collector with a developing identity.",
@@ -301,13 +300,11 @@ function inferStrategy(owned: Collectible[], dna: CollectorDNA): TwinPreference 
   const authenticated = owned.filter((c) => c.isAuthenticated).length;
   const authRate = owned.length > 0 ? authenticated / owned.length : 0;
   const graded = owned.filter((c) => c.grade).length;
-
   const strategies: string[] = [];
   if (authRate > 0.7) strategies.push("authentication-first");
   if (graded > owned.length * 0.5) strategies.push("grade-conscious");
   if (dna.diversificationScore > 60) strategies.push("diversified");
   else strategies.push("concentrated");
-
   return {
     label: "Collection Strategy",
     value: strategies.join(", "),
@@ -323,30 +320,24 @@ export function assessCollectibleFit(
 ): TwinCollectibleAssessment {
   const catMatch = twin.favoriteCategories.find((c) => c.value === collectible.category);
   const twinInterest = catMatch ? catMatch.confidence * 100 : 20;
-
   const eraMatch = collectible.year
     ? twin.favoriteEras.find((e) => e.value === `${Math.floor(collectible.year! / 10) * 10}s`)
     : null;
   const historicalFit = eraMatch ? eraMatch.confidence * 80 : 30;
-
   const brandMatch = collectible.brand
     ? twin.favoriteBrands.find((b) => b.value === collectible.brand)
     : null;
-
   const confidence = twin.confidence;
   const marketAlignment = 50;
   const dnaImpact = catMatch ? 10 : -5;
-
   const evidence: string[] = [];
   if (catMatch) evidence.push(`Category "${catMatch.label}" is a favorite.`);
   if (eraMatch) evidence.push(`Era "${eraMatch.label}" aligns with preferences.`);
   if (brandMatch) evidence.push(`Brand "${brandMatch.label}" is a known favorite.`);
   if (!catMatch && !eraMatch && !brandMatch) evidence.push("No strong alignment with observed preferences.");
-
   const explanation = catMatch
     ? `This ${COLLECTIBLE_CATEGORY_LABELS[collectible.category]} aligns well with your collecting patterns.`
     : `This ${COLLECTIBLE_CATEGORY_LABELS[collectible.category]} would represent an expansion of your current focus.`;
-
   return {
     collectibleId: collectible.id,
     twinInterest: Math.round(twinInterest),
@@ -365,7 +356,6 @@ export function answerTwinQuestion(
   memories: CollectorMemoryFact[]
 ): TwinAnswer {
   const q = question.question.toLowerCase();
-
   let alignment: TwinAnswer["alignment"] = "partially_aligned";
   let alignmentScore = 50;
   let reasoning = "";
@@ -373,16 +363,16 @@ export function answerTwinQuestion(
   const dnaFactors: string[] = [];
   const memoryFactors: string[] = [];
 
-  if (q.includes("buy") || q.includes("purchase") || q.includes("acquire")) {
+  if (q.includes("buy ") || q.includes("purchase ") || q.includes("acquire ")) {
     alignmentScore = twin.buyingStyle.score;
     alignment = alignmentScore > 60 ? "aligned" : alignmentScore > 30 ? "partially_aligned" : "misaligned";
     reasoning = `Based on your ${twin.buyingStyle.description.toLowerCase()}, this ${alignment === "aligned" ? "fits" : "may not fit"} your typical pattern.`;
     historicalBehavior.push(twin.buyingStyle.description);
     dnaFactors.push(`Risk profile: ${twin.riskProfile}`);
-  } else if (q.includes("sell") || q.includes("let go") || q.includes("part with")) {
+  } else if (q.includes("sell ") || q.includes("let go ") || q.includes("part with ")) {
     reasoning = `Your ${twin.philosophy.value.toLowerCase()} As a ${twin.archetype}, selling decisions depend on strategic alignment.`;
     dnaFactors.push(`Archetype: ${twin.archetype}`);
-  } else if (q.includes("collection") || q.includes("match") || q.includes("fit")) {
+  } else if (q.includes("collection ") || q.includes("match ") || q.includes("fit ")) {
     const cats = twin.favoriteCategories.map((c) => c.label).join(", ");
     reasoning = `Your collection focuses on: ${cats}. Fit depends on alignment with these categories and your ${twin.collectionStrategy.value} strategy.`;
     dnaFactors.push(`Diversification: ${twin.diversificationPreference.score}`);

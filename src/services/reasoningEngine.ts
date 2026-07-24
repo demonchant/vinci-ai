@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { openai, AI_MODELS } from "@/lib/openai";
 
 interface ReasoningInputs {
@@ -68,9 +69,11 @@ Respond as JSON:
       reason: parsed.reason,
       evidence,
       confidence,
-      memoryImpact: inputs.memoryChanges,
-      dnaImpact: inputs.dnaChanges,
-      sources: inputs.sources,
+
+      memoryImpact: inputs.memoryChanges as unknown as Prisma.InputJsonValue,
+      dnaImpact: inputs.dnaChanges as unknown as Prisma.InputJsonValue,
+      sources: inputs.sources as unknown as Prisma.InputJsonValue,
+
       modelVersion: AI_MODELS.chat,
     },
   });

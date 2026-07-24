@@ -21,7 +21,8 @@ export async function GET(_req: NextRequest) {
     ]);
     score = dna.dnaScore;
     type = dna.primaryType;
-    unlockedCount = achievements.filter((a) => a.isUnlocked).length;
+    // ✅ FIX APPLIED HERE: Use unlockedAt instead of isUnlocked
+    unlockedCount = achievements.filter((a) => a.unlockedAt !== null).length;
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240">

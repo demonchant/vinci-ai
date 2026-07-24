@@ -27,11 +27,14 @@ export const ARCHETYPE_LABELS: Record<CollectorArchetype, string> = {
   COMPETITIVE_COLLECTOR: "Competitive Collector",
 };
 
-export type RiskProfile = "CONSERVATIVE" | "BALANCED" | "AGGRESSIVE";
+export type RiskProfile =
+  | "CONSERVATIVE"
+  | "BALANCED"
+  | "AGGRESSIVE";
 
 export interface DNATrait {
   name: string;
-  score: number; // 0-100
+  score: number;
   explanation: string;
 }
 
@@ -62,7 +65,7 @@ export interface AchievementBadge {
 
 export interface CollectorDNAInsight {
   text: string;
-  basedOn: string[]; // which signals produced this insight, for "why" transparency
+  basedOn: string[];
 }
 
 export interface CollectorDNAPrediction {
@@ -80,7 +83,8 @@ export interface CollectorCompass {
 export interface CollectorDNA {
   dnaScore: number;
   primaryType: CollectorArchetype;
-  secondaryType: CollectorArchetype;
+  secondaryType: CollectorArchetype | null;
+  projectedArchetype?: CollectorArchetype; // ✅ Added
   summary: string;
   traits: DNATrait[];
   wheel: DNAWheelAxis[];
@@ -88,7 +92,11 @@ export interface CollectorDNA {
   diversificationScore: number;
   diversificationSuggestions: string[];
   collectionHealthScore: number;
-  collectionHealthFactors: { factor: string; score: number; note: string }[];
+  collectionHealthFactors: {
+    factor: string;
+    score: number;
+    note: string;
+  }[];
   achievements: AchievementBadge[];
   insights: CollectorDNAInsight[];
   funFacts: string[];
@@ -102,11 +110,4 @@ export interface CollectorDNA {
     weekOf: string;
   };
   computedAt: string;
-}
-
-export interface CollectorDNA {
-  dnaScore: number;
-  primaryType: string;
-  secondaryType: string | null;
-  traits: Record<string, number>;
 }

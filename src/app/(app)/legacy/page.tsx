@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { FileText, Loader2, Sparkles } from "@/components/ui/icons";
@@ -15,18 +15,15 @@ import { AchievementsShowcase } from "@/components/legacy/achievements/Achieveme
 import { NextChapter } from "@/components/legacy/goals/NextChapter";
 import { ReportHistory } from "@/components/legacy/history/ReportHistory";
 import { LegacyExportToolbar } from "@/components/legacy/export/LegacyExportToolbar";
-import { getLegacyReport } from "@/services/legacyReport";
 import { LegacyIntelligenceSection } from "@/components/legacy/intelligence/LegacyIntelligenceSection";
+import type { LegacyReportData } from "@/types/legacy";
 
 const LegacyScorePanel = dynamic(
   () => import("@/components/legacy/portfolio/LegacyScorePanel").then((m) => m.LegacyScorePanel),
   { loading: () => <div className="h-64 animate-pulse rounded-2xl bg-white/5" /> }
 );
 
-type ReportSection = {
-  id: string;
-  label: string;
-};
+type ReportSection = { id: string; label: string };
 
 const SECTIONS: ReportSection[] = [
   { id: "cover", label: "Cover" },
@@ -46,36 +43,45 @@ export default function LegacyPage() {
   const [demo, setDemo] = useState(false);
   const [activeSection, setActiveSection] = useState("cover");
 
-  // Load the most recent report on mount
   useEffect(() => {
     fetch("/api/legacy/history")
       .then((r) => r.json())
-      .then(async (data) => {
+      .then(async (data: { demo: boolean; reports: { id: string }[] }) => {
         setDemo(Boolean(data.demo));
         const latest = data.reports?.[0];
         if (latest && latest.id !== "demo-report-1") {
-          const res = await fetch(`/api/legacy/history?reportId=${latest.id}`);
-          // For a real load, we'd fetch the full report data here
-          // The history endpoint returns summaries; a dedicated GET /api/legacy/[id] is the clean approach
-          // For now, the generate endpoint returns the full record
+          // Real load logic would go here
         }
+      })
+      .catch(() => {
+        /* Ignore fetch errors on mount */
       });
   }, []);
 
   async function handleOpenReport(reportId: string) {
     const res = await fetch(`/api/legacy/export?format=json&reportId=${reportId}`);
     if (!res.ok) return;
-    const data = await res.json();
-    // Load from JSON export as a quick shortcut — the data is the same shape
-    // A dedicated GET /api/legacy/[id] is cleaner but would duplicate the record type here
-    loadReport({ id: reportId, userId: "", periodStart: "", periodEnd: "", reportData: data, pdfStoragePath: null, shareCardUrl: null, generatedAt: "" });
+    
+    // Explicitly type the JSON response
+    const data: LegacyReportData = await res.json();
+    
+    loadReport({
+      id: reportId,
+      userId: "",
+      periodStart: "",
+      periodEnd: "",
+      reportData: data,
+      pdfStoragePath: null,
+      shareCardUrl: null,
+      generatedAt: new Date().toISOString(),
+    });
   }
 
-  const rd = report?.reportData;
+  // Explicitly type the report data variable
+  const rd: LegacyReportData | undefined = report?.reportData;
 
   return (
     <div className="flex h-screen">
-      {/* Left nav — section index */}
       <nav className="hidden w-52 shrink-0 flex-col border-r border-white/5 p-4 lg:flex">
         <p className="mb-4 text-[11px] font-medium uppercase tracking-wide text-gray-600">
           Report Sections
@@ -98,7 +104,6 @@ export default function LegacyPage() {
             </button>
           ))}
         </div>
-
         <div className="mt-auto pt-4 border-t border-white/5">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-600">
             History
@@ -107,9 +112,7 @@ export default function LegacyPage() {
         </div>
       </nav>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Toolbar */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/5 px-6 py-3">
           <div className="flex items-center gap-2">
             <Icon icon={FileText} size="button" className="text-accent" decorative />
@@ -139,12 +142,13 @@ export default function LegacyPage() {
           </div>
         </div>
 
-        {/* Report body */}
         <div className="flex-1 overflow-y-auto">
           {isGenerating && (
             <div className="flex h-full flex-col items-center justify-center gap-4">
               <Icon icon={Loader2} size="hero" className="animate-spin text-primary" decorative />
-              <p className="text-sm text-gray-400">Vinci AI is gathering your data and writing your Legacy Report...</p>
+              <p className="text-sm text-gray-400">
+                Vinci AI is gathering your data and writing your Legacy Report...
+              </p>
               <p className="text-xs text-gray-600">This takes about 30-60 seconds.</p>
             </div>
           )}
@@ -153,7 +157,10 @@ export default function LegacyPage() {
             <div className="flex h-full flex-col items-center justify-center gap-3">
               <p className="text-sm text-gray-400">{error}</p>
               {!demo && (
-                <button onClick={generate} className="rounded-xl bg-primary px-4 py-2 text-xs text-white">
+                <button
+                  onClick={generate}
+                  className="rounded-xl bg-primary px-4 py-2 text-xs text-white"
+                >
                   Try again
                 </button>
               )}
@@ -165,8 +172,8 @@ export default function LegacyPage() {
               <Icon icon={FileText} size="illustration" className="text-gray-700" decorative />
               <p className="text-lg text-gray-300">Your Legacy Report awaits</p>
               <p className="max-w-md text-sm text-gray-500">
-                Generate your first AI Collector Legacy Report™ — a museum-quality celebration of your
-                collecting journey, grounded entirely in your real data.
+                Generate your first AI Collector Legacy Report™ — a museum-quality celebration of
+                your collecting journey, grounded entirely in your real data.
               </p>
               {!demo && (
                 <button
@@ -184,7 +191,7 @@ export default function LegacyPage() {
             </div>
           )}
 
-          {!isGenerating && rd && (
+          {!isGenerating && !error && rd && (
             <AnimatePresence>
               <div className="space-y-12 px-6 py-8 max-w-4xl mx-auto">
                 <Section id="cover">
@@ -222,7 +229,8 @@ export default function LegacyPage() {
                 {rd.provenanceHighlights.length > 0 && (
                   <Section id="provenance" title="Provenance Highlights">
                     <div className="space-y-2">
-                      {rd.provenanceHighlights.map((h, i) => (
+                      {/* ✅ Explicitly typed to prevent implicit 'any' error */}
+                      {rd.provenanceHighlights.map((h: { label: string; detail: string }, i: number) => (
                         <div key={i} className="rounded-xl bg-white/[0.02] p-3">
                           <p className="text-[11px] uppercase tracking-wide text-gray-600">{h.label}</p>
                           <p className="mt-1 text-sm text-gray-300">{h.detail}</p>
@@ -243,7 +251,13 @@ export default function LegacyPage() {
                 <div className="pb-4 pt-8 text-center">
                   <p className="text-xs text-gray-600">{rd.marketNote}</p>
                   <p className="mt-2 text-[11px] text-gray-700">
-                    Generated {new Date(rd.cover.generatedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} by Vinci AI
+                    Generated{" "}
+                    {new Date(rd.cover.generatedAt).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}{" "}
+                    by Vinci AI
                   </p>
                 </div>
               </div>
@@ -271,9 +285,7 @@ function Section({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {title && (
-        <h2 className="mb-4 font-display text-2xl">{title}</h2>
-      )}
+      {title && <h2 className="mb-4 font-display text-2xl">{title}</h2>}
       {children}
     </motion.section>
   );

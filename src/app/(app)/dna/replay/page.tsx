@@ -168,7 +168,7 @@ export default function DNAReplayPage() {
             </p>
             <CollectorCompass
               current={compassCurrent}
-              previous={compassPrevious}
+              previous={compassPrevious ?? null}
               recentShift={recentShift}
             />
           </div>

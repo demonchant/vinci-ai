@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { TimelineEventType } from "@prisma/client";
+import { Prisma, type TimelineEventType } from "@prisma/client";
 
 export interface TimelineEventInput {
   collectibleId: string;
@@ -24,7 +24,12 @@ export interface TimelineEventInput {
 
 /** Events are append-only by design — there is no update/delete here. */
 export async function appendTimelineEvent(input: TimelineEventInput) {
-  return prisma.collectibleTimelineEvent.create({ data: input });
+  return prisma.collectibleTimelineEvent.create({
+    data: {
+      ...input,
+      metadata: input.metadata as Prisma.InputJsonValue,
+    },
+  });
 }
 
 export async function listTimelineEvents(collectibleId: string, userId: string) {

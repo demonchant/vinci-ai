@@ -16,10 +16,12 @@ async function gatherSignals(userId: string): Promise<AchievementSignals> {
   const categories = new Set(collectibles.map((c) => c.category));
   const authenticated = collectibles.filter((c) => c.isAuthenticated);
   const totalValue = collectibles.reduce(
-    (s, c) => s + Number(c.estimatedValue ?? c.purchasePrice ?? 0),
+    (sum, c) => sum + Number(c.estimatedValue ?? c.purchasePrice ?? 0),
     0
   );
-  const dnaScore = dna ? ((dna.scores as any)?.dnaScore ?? 0) : 0;
+
+  const dnaScore = dna?.dnaScore ?? 0;
+
   const daysActive = user
     ? Math.round((Date.now() - user.createdAt.getTime()) / 86_400_000)
     : 0;
@@ -49,17 +51,23 @@ export async function syncAchievements(userId: string) {
   for (const def of ACHIEVEMENT_DEFINITIONS) {
     const isUnlocked = def.checkUnlocked(signals);
     const progress = def.progressOf(signals);
-
     const existing = await prisma.achievement.findFirst({ where: { userId, key: def.key } });
 
     if (existing) {
-      if (!existing.isUnlocked && isUnlocked) {
+      const alreadyUnlocked = existing.unlockedAt !== null;
+      if (existing.unlockedAt === null && isUnlocked) {
         await prisma.achievement.update({
           where: { id: existing.id },
-          data: { isUnlocked: true, unlockedAt: new Date(), progress },
+          data: {
+            unlockedAt: new Date(),
+            progress,
+          },
         });
       } else if (existing.progress !== progress) {
-        await prisma.achievement.update({ where: { id: existing.id }, data: { progress } });
+        await prisma.achievement.update({
+          where: { id: existing.id },
+          data: { progress },
+        });
       }
     } else {
       await prisma.achievement.create({
@@ -68,11 +76,9 @@ export async function syncAchievements(userId: string) {
           key: def.key,
           title: def.title,
           description: def.description,
-          tier: def.tier.toUpperCase() as any,
-          xp: def.xp,
-          isUnlocked,
-          unlockedAt: isUnlocked ? new Date() : null,
+          icon: def.icon,
           progress,
+          unlockedAt: isUnlocked ? new Date() : null,
         },
       });
     }
@@ -85,10 +91,18 @@ export async function listAchievements(userId: string) {
   await syncAchievements(userId);
   const rows = await prisma.achievement.findMany({
     where: { userId },
-    orderBy: [{ isUnlocked: "desc" }, { xp: "desc" }],
+    orderBy: { createdAt: "desc" },
   });
+
   return rows.map((r) => ({
-    ...r,
-    tier: r.tier.toLowerCase() as "bronze" | "silver" | "gold" | "legendary",
+    id: r.id,
+    userId: r.userId,
+    key: r.key,
+    title: r.title,
+    description: r.description,
+    icon: r.icon,
+    progress: r.progress,
+    unlockedAt: r.unlockedAt,
+    createdAt: r.createdAt,
   }));
 }

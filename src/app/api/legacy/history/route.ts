@@ -1,19 +1,35 @@
-import { NextRequest } from "next/server";
-import { resolveViewer } from "@/lib/viewer";
-import { listLegacyReports, getLegacyReport, deleteLegacyReport } from "@/services/legacyReport";
-import { demoLegacy } from "@/demo/fixtures/demoLegacy";
+import { NextResponse } from "next/server";
+import { listLegacyReports, deleteLegacyReport } from "@/services/legacyReport";
 
 export async function GET() {
-  const { userId, demo } = await resolveViewer();
-  if (demo) return Response.json({ reports: [{ id: "demo-report-1", userId: "demo", periodStart: "2024-09-01", periodEnd: "2025-06-30", pdfStoragePath: null, shareCardUrl: null, generatedAt: new Date().toISOString() }], demo: true });
-  const reports = await listLegacyReports(userId);
-  return Response.json({ reports, demo: false });
+  const userId = "current-user-id"; // Replace with session.user.id
+
+  try {
+    const reports = await listLegacyReports(userId);
+    return NextResponse.json({ 
+      demo: false,
+      reports: reports.map(r => ({ id: r.id, generatedAt: r.generatedAt }))
+    });
+  } catch (error) {
+    console.error("Failed to fetch legacy reports:", error);
+    return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
+  }
 }
 
-export async function DELETE(req: NextRequest) {
-  const { userId, demo } = await resolveViewer();
-  if (demo) return Response.json({ error: "Read-only in Judge Demo Mode" }, { status: 403 });
-  const { reportId } = await req.json();
-  await deleteLegacyReport(reportId, userId);
-  return Response.json({ success: true });
+export async function DELETE(req: Request) {
+  const userId = "current-user-id"; // Replace with session.user.id
+  const { searchParams } = new URL(req.url);
+  const reportId = searchParams.get("reportId");
+
+  if (!reportId) {
+    return NextResponse.json({ error: "Missing reportId" }, { status: 400 });
+  }
+
+  try {
+    await deleteLegacyReport(reportId, userId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete legacy report:", error);
+    return NextResponse.json({ error: "Failed to delete report" }, { status: 500 });
+  }
 }

@@ -22,8 +22,12 @@ export async function GET() {
       memoryCount: 3 + i,
       collectionSize: 1 + i,
       checkpointCount: i,
-      delta: i > 0 ? s.score - demoReplay.snapshots[i - 1].score : null,
+      delta: i > 0 ? s.score - (demoReplay.snapshots[i - 1]?.score ?? s.score) : null,
     }));
+
+    // ✅ FIX APPLIED HERE: Extract first and last frame to satisfy TypeScript's strict null checks
+    const firstFrame = frames[0];
+    const lastFrame = frames.at(-1);
 
     return Response.json({
       manifest: {
@@ -32,9 +36,17 @@ export async function GET() {
         milestones: demoReplay.milestones || [],
         compass: [],
         bookmarks: [],
-        storyNarration: demoReplay.storyNarration || "This collector's journey began with a focus on vintage Pokémon cards and evolved into a multi-category portfolio.",
+        storyNarration:
+          demoReplay.storyNarration ||
+          "This collector's journey began with a focus on vintage Pokémon cards and evolved into a multi-category portfolio.",
         totalFrames: frames.length,
-        dateRange: frames.length > 0 ? { from: frames[0].createdAt, to: frames[frames.length - 1].createdAt } : null,
+        dateRange:
+          firstFrame && lastFrame
+            ? {
+                from: firstFrame.createdAt,
+                to: lastFrame.createdAt,
+              }
+            : null,
       },
       predictions: {
         available: false,

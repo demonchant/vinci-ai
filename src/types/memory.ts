@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 export type MemorySource =
   | "CHAT"
   | "IMAGE_ANALYSIS"
@@ -36,26 +38,26 @@ export interface CollectorMemoryFact {
   id: string;
   key: MemoryKey;
   label: string;
-  value: string | number | boolean | string[];
+  value: Prisma.JsonValue;
   source: MemorySource;
   confidence: number;
   isPinned: boolean;
   isVerified: boolean;
   isLocked: boolean;
   isArchived: boolean;
-  learnedAt: string;
-  updatedAt: string;
+  learnedAt: Date;
+  updatedAt: Date;
 }
 
 export interface MemoryExtraction {
   key: MemoryKey;
   label: string;
-  value: string | number | boolean | string[];
+  value: Prisma.JsonValue;
   confidence: number;
 }
 
 export interface CollectorMemoryProfile {
   facts: CollectorMemoryFact[];
   /** Convenience flat map for prompt-building: key -> value */
-  asRecord: Record<string, string | number | boolean | string[]>;
+  asRecord: Record<string, Prisma.JsonValue>;
 }

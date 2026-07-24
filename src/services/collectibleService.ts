@@ -76,9 +76,13 @@ export async function createCollectible(userId: string, input: CreateCollectible
 
 export async function listCollectibles(
   userId: string,
-  filters?: { status?: CollectibleStatus; category?: string; collectionId?: string }
+  filters?: {
+    status?: CollectibleStatus;
+    category?: string;
+    collectionId?: string;
+  }
 ) {
-  return prisma.collectible.findMany({
+  const rows = await prisma.collectible.findMany({
     where: {
       userId,
       status: filters?.status,
@@ -88,6 +92,40 @@ export async function listCollectibles(
     include: { images: true },
     orderBy: { createdAt: "desc" },
   });
+
+  return rows.map((r) => ({
+    id: r.id,
+    userId: r.userId,
+    collectionId: r.collectionId,
+    title: r.title,
+    category: r.category,
+    status: r.status,
+    brand: r.brand,
+    franchise: r.franchise,
+    artist: r.artist,
+    year: r.year,
+    condition: r.condition,
+    gradingCompany: r.gradingCompany,
+    grade: r.grade,
+    purchasePrice: r.purchasePrice ? Number(r.purchasePrice) : null,
+    estimatedValue: r.estimatedValue ? Number(r.estimatedValue) : null,
+    currency: r.currency,
+    rarityScore: r.rarityScore,
+    isAuthenticated: r.isAuthenticated,
+    notes: r.notes,
+    tags: r.tags,
+    purchasedAt: r.purchasedAt?.toISOString() ?? null,
+    soldAt: r.soldAt?.toISOString() ?? null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    images: r.images.map((img) => ({
+      id: img.id,
+      publicUrl: img.publicUrl,
+      isPrimary: img.isPrimary,
+      width: img.width,
+      height: img.height,
+    })),
+  }));
 }
 
 export async function getCollectible(userId: string, id: string) {

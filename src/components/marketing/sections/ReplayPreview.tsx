@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, CheckCircle2 } from "@/components/ui/icons";
@@ -16,7 +15,9 @@ const FRAMES = [
 export function ReplayPreview() {
   const [index, setIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const frame = FRAMES[index];
+  
+  // ✅ FIX APPLIED HERE: Non-null assertion tells TypeScript this is guaranteed to exist
+  const frame = FRAMES[index]!;
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -41,7 +42,6 @@ export function ReplayPreview() {
           Demonstration timeline below — drag it, or hit play.
         </p>
       </Reveal>
-
       <Reveal className="mx-auto mt-16 max-w-2xl glass-strong rounded-3xl p-8">
         <div className="flex items-baseline justify-between">
           <AnimatePresence mode="wait">
@@ -67,7 +67,6 @@ export function ReplayPreview() {
             </motion.span>
           </AnimatePresence>
         </div>
-
         <AnimatePresence mode="wait">
           <motion.p
             key={frame.note}
@@ -80,7 +79,6 @@ export function ReplayPreview() {
             {frame.note}
           </motion.p>
         </AnimatePresence>
-
         <div className="mt-8 flex items-center gap-4">
           <button
             onClick={() => setIsPlaying((p) => !p)}

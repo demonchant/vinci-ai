@@ -32,12 +32,14 @@ export function DNAHeroCard({ dna }: { dna: CollectorDNA }) {
             <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-primary">
               {ARCHETYPE_LABELS[dna.primaryType]}
             </span>
+            {/* ✅ Safe null check for secondaryType */}
             <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-gray-300">
-              {ARCHETYPE_LABELS[dna.secondaryType]}
+              {dna.secondaryType ? ARCHETYPE_LABELS[dna.secondaryType] : "None"}
             </span>
           </div>
 
           <div className="mt-6 space-y-2.5">
+            {/* ✅ .slice() now works perfectly because traits is an array */}
             {dna.traits.slice(0, 3).map((t) => (
               <div key={t.name}>
                 <div className="flex justify-between text-xs text-gray-400">

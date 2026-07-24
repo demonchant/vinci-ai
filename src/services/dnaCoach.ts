@@ -16,7 +16,20 @@ export async function generateCoachCard(userId: string): Promise<CoachCard> {
     getMemoryProfile(userId),
   ]);
 
-  const scores = dnaSnap?.scores ?? {};
+  // The Prisma schema flattened the old `scores` JSON field into individual columns.
+  // We dynamically extract all numeric fields (and archetype types) to reconstruct 
+  // the trait scores object for the AI prompt.
+  const scores = dnaSnap
+    ? Object.fromEntries(
+        Object.entries(dnaSnap).filter(
+          ([key, value]) =>
+            typeof value === "number" ||
+            key === "primaryType" ||
+            key === "secondaryType"
+        )
+      )
+    : {};
+
   const memoryKeys = facts.slice(0, 8).map((f) => ({ label: f.label, value: f.value }));
 
   const completion = await openai.chat.completions.create({

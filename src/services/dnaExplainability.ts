@@ -29,8 +29,19 @@ export async function explainAllTraits(userId: string): Promise<TraitExplanation
     }),
   ]);
 
-  const current = (snapshots[0]?.scores ?? {}) as Record<string, number>;
-  const previous = (snapshots[1]?.scores ?? {}) as Record<string, number>;
+  // The Prisma schema flattened the old `scores` JSON field into individual columns.
+  // We dynamically extract all numeric fields to reconstruct the trait scores object.
+  const current = snapshots[0]
+    ? (Object.fromEntries(
+        Object.entries(snapshots[0]).filter(([, value]) => typeof value === "number")
+      ) as Record<string, number>)
+    : {};
+
+  const previous = snapshots[1]
+    ? (Object.fromEntries(
+        Object.entries(snapshots[1]).filter(([, value]) => typeof value === "number")
+      ) as Record<string, number>)
+    : {};
 
   const traits = Object.entries(current).filter(([k]) => k !== "dnaScore" && k !== "primaryType");
 

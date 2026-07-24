@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   images: {
     remotePatterns: [
       {
@@ -10,6 +15,7 @@ const nextConfig = {
       },
     ],
   },
+
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

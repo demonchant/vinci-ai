@@ -12,48 +12,19 @@ import type {
   LegacyGoalHighlight,
   LegacyPortfolioSnapshot,
   LegacyScore,
+  LegacyDataBundle,
 } from "@/types/legacy";
-
-export interface LegacyDataBundle {
-  userId: string;
-  user: { createdAt: Date; email: string };
-  dna: { dnaScore: number; primaryType: string; secondaryType: string | null; traits: Record<string, number> };
-  facts: { id: string; label: string; value: unknown; confidence: number; isVerified: boolean; key: string }[];
-  snapshotCount: number;
-  cover: LegacyCoverData;
-  collectionHighlights: LegacyCollectionHighlight[];
-  memoryHighlights: LegacyMemoryHighlight[];
-  conversationHighlights: LegacyConversationHighlight[];
-  achievements: LegacyAchievementHighlight[];
-  goals: LegacyGoalHighlight[];
-  portfolio: LegacyPortfolioSnapshot;
-  legacyScore: LegacyScore;
-  provenanceHighlights: { label: string; detail: string }[];
-  marketNote: string;
-}
 
 export async function gatherLegacyBundle(userId: string): Promise<LegacyDataBundle> {
   const [user, dna, { facts }, stats, achievements, collectibles, chats, goals, snapshotCount] =
     await Promise.all([
-      prisma.user.findFirstOrThrow({
-        where: { id: userId },
-        select: { createdAt: true, email: true },
-      }),
+      prisma.user.findFirstOrThrow({ where: { id: userId }, select: { createdAt: true, email: true } }),
       computeCollectorDNA(userId),
       getMemoryProfile(userId),
       computePortfolioStats(userId),
       listAchievements(userId),
-      prisma.collectible.findMany({
-        where: { userId },
-        orderBy: { estimatedValue: "desc" },
-        take: 20,
-        include: { images: true },
-      }),
-      prisma.aIChat.findMany({
-        where: { userId },
-        orderBy: { updatedAt: "desc" },
-        take: 5,
-      }),
+      prisma.collectible.findMany({ where: { userId }, orderBy: { estimatedValue: "desc" }, take: 20, include: { images: true } }),
+      prisma.aIChat.findMany({ where: { userId }, orderBy: { updatedAt: "desc" }, take: 5 }),
       prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10 }),
       prisma.dNASnapshot.count({ where: { userId } }),
     ]);
@@ -66,52 +37,43 @@ export async function gatherLegacyBundle(userId: string): Promise<LegacyDataBund
     primaryArchetype: dna.primaryType,
     dnaScore: dna.dnaScore,
     collectionSize: stats.totalItems,
-    portfolioValue: stats.totalValue > 0 ? stats.totalValue : null,
+    portfolioValue: stats.totalValue > 0 ? Number(stats.totalValue) : null,
     generatedAt: new Date().toISOString(),
   };
 
   const mostValuable = collectibles[0] ?? null;
-  const mostAnalyzed = await prisma.collectible.findFirst({
-    where: { userId },
-    orderBy: { lastAnalysisConfidence: "desc" },
-  });
-  const newest = await prisma.collectible.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  const mostAnalyzed = await prisma.collectible.findFirst({ where: { userId }, orderBy: { lastAnalysisConfidence: "desc" } });
+  const newest = await prisma.collectible.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
 
-  const collectionHighlights: LegacyCollectionHighlight[] = [
-    mostValuable
-      ? {
-          label: "Most Valuable",
-          collectibleId: mostValuable.id,
-          collectibleTitle: mostValuable.title,
-          value: mostValuable.estimatedValue
-            ? `$${Number(mostValuable.estimatedValue).toLocaleString()}`
-            : "Value unknown",
-        }
-      : null,
-    mostAnalyzed
-      ? {
-          label: "Highest Confidence",
-          collectibleId: mostAnalyzed.id,
-          collectibleTitle: mostAnalyzed.title,
-          value: `${mostAnalyzed.lastAnalysisConfidence ?? 0}% confidence`,
-        }
-      : null,
-    newest
-      ? {
-          label: "Newest Acquisition",
-          collectibleId: newest.id,
-          collectibleTitle: newest.title,
-          value: new Date(newest.createdAt).toLocaleDateString(),
-        }
-      : null,
-  ].filter((h): h is LegacyCollectionHighlight => h !== null);
+  const collectionHighlights: LegacyCollectionHighlight[] = [];
+  if (mostValuable) {
+    collectionHighlights.push({
+      label: "Most Valuable",
+      collectibleId: mostValuable.id,
+      collectibleTitle: mostValuable.title,
+      value: mostValuable.estimatedValue ? `$${Number(mostValuable.estimatedValue).toLocaleString()}` : "Value unknown",
+    });
+  }
+  if (mostAnalyzed) {
+    collectionHighlights.push({
+      label: "Highest Confidence",
+      collectibleId: mostAnalyzed.id,
+      collectibleTitle: mostAnalyzed.title,
+      value: `${mostAnalyzed.lastAnalysisConfidence ?? 0}% confidence`,
+    });
+  }
+  if (newest) {
+    collectionHighlights.push({
+      label: "Newest Acquisition",
+      collectibleId: newest.id,
+      collectibleTitle: newest.title,
+      value: new Date(newest.createdAt).toLocaleDateString(),
+    });
+  }
 
   const topFacts = [...facts].sort((a, b) => b.confidence - a.confidence).slice(0, 4);
-  const memoryHighlights: LegacyMemoryHighlight[] = topFacts.map((f, i) => ({
-    label: i === 0 ? "Most Confident Memory" : f.isVerified ? "Verified Memory" : "AI Inferred Memory",
+  const memoryHighlights: LegacyMemoryHighlight[] = topFacts.map((f) => ({
+    label: f.isVerified ? "Verified Memory" : "AI Inferred Memory",
     memoryLabel: f.label,
     memoryValue: String(f.value),
     confidence: f.confidence,
@@ -127,33 +89,30 @@ export async function gatherLegacyBundle(userId: string): Promise<LegacyDataBund
   const achievementHighlights: LegacyAchievementHighlight[] = achievements.map((a) => ({
     key: a.key,
     title: a.title,
-    tier: a.tier,
-    xp: a.xp,
+    tier: "standard", // Fallback as requested
+    xp: 0,            // Fallback as requested
     unlockedAt: a.unlockedAt?.toISOString() ?? null,
-    isUnlocked: a.isUnlocked,
+    isUnlocked: a.unlockedAt !== null,
     progress: a.progress,
   }));
 
   const goalHighlights: LegacyGoalHighlight[] = goals.map((g) => ({
     title: g.title,
     progress: g.progress,
-    isCompleted: g.isCompleted,
-    dnaContribution: (g as any).dnaTraitImpact ?? null,
+    isCompleted: g.status === "COMPLETED",
+    dnaContribution: null, // ✅ Added to satisfy the updated interface
   }));
 
   const portfolio: LegacyPortfolioSnapshot = {
     totalItems: stats.totalItems,
-    totalValue: stats.totalValue,
-    categoryDistribution: stats.categoryDistribution.map((d) => ({
-      category: d.category,
-      count: d.count,
-    })),
+    totalValue: Number(stats.totalValue),
+    categoryDistribution: stats.categoryDistribution.map((d) => ({ category: d.category, count: d.count })),
     authenticationRatePct: stats.authenticationRatePct,
     averageConfidence: stats.averageConfidence,
     diversificationScore: stats.diversificationScore,
   };
 
-  const unlockedCount = achievements.filter((a) => a.isUnlocked).length;
+  const unlockedCount = achievements.filter((a) => a.unlockedAt !== null).length;
   const achievementScore = Math.round((unlockedCount / Math.max(achievements.length, 1)) * 100);
   const memoryScore = Math.min(100, Math.round((facts.length / 15) * 100));
   const consistencyScore = Math.min(100, Math.round((snapshotCount / 20) * 100));
@@ -185,14 +144,19 @@ export async function gatherLegacyBundle(userId: string): Promise<LegacyDataBund
   if (longestTimeline) {
     provenanceHighlights.push({
       label: "Longest Provenance",
-      detail: `${longestTimeline.title} — ${(longestTimeline as any)._count.timelineEvents} events recorded`,
+      detail: `${longestTimeline.title} — ${longestTimeline._count.timelineEvents} events recorded`,
     });
   }
 
   return {
     userId,
     user: { createdAt: user.createdAt, email: user.email },
-    dna,
+    dna: {
+      dnaScore: dna.dnaScore,
+      primaryType: dna.primaryType,
+      secondaryType: dna.secondaryType,
+      traits: Object.fromEntries(dna.traits.map((t) => [t.name, t.score])) as Record<string, number>,
+    },
     facts,
     snapshotCount,
     cover,
@@ -204,7 +168,6 @@ export async function gatherLegacyBundle(userId: string): Promise<LegacyDataBund
     portfolio,
     legacyScore,
     provenanceHighlights,
-    marketNote:
-      "Live market data is not available in the current report period. Value estimates are AI-based estimates from image analysis, not real-time market prices.",
+    marketNote: "Live market data is not available in the current report period. Value estimates are AI-based estimates from image analysis, not real-time market prices.",
   };
 }

@@ -4,6 +4,12 @@ export interface EvidenceBundle {
   dataSourceIds: string[];
 }
 
+export interface LegacyNarrativeSection {
+  heading: string;
+  body: string;
+  evidence: EvidenceBundle;
+}
+
 export interface LegacyCoverData {
   collectorName: string;
   collectorSince: string;
@@ -13,12 +19,6 @@ export interface LegacyCoverData {
   collectionSize: number;
   portfolioValue: number | null;
   generatedAt: string;
-}
-
-export interface LegacyNarrativeSection {
-  heading: string;
-  body: string;
-  evidence: EvidenceBundle;
 }
 
 export interface LegacyCollectionHighlight {
@@ -38,15 +38,15 @@ export interface LegacyMemoryHighlight {
 export interface LegacyConversationHighlight {
   label: string;
   chatTitle: string | null;
-  chatId: string | null;
+  chatId: string;
   summary: string;
 }
 
 export interface LegacyAchievementHighlight {
   key: string;
   title: string;
-  tier: string;
-  xp: number;
+  tier: string; // Fallback preserved for legacy compatibility
+  xp: number;   // Fallback preserved for legacy compatibility
   unlockedAt: string | null;
   isUnlocked: boolean;
   progress: number;
@@ -56,14 +56,7 @@ export interface LegacyGoalHighlight {
   title: string;
   progress: number;
   isCompleted: boolean;
-  dnaContribution: string | null;
-}
-
-export interface LegacyScore {
-  overall: number;
-  breakdown: { label: string; score: number; weight: number }[];
-  confidence: number;
-  explanation: string;
+  dnaContribution: string | null; // ✅ Added to match newer Legacy Report implementation
 }
 
 export interface LegacyPortfolioSnapshot {
@@ -73,6 +66,13 @@ export interface LegacyPortfolioSnapshot {
   authenticationRatePct: number;
   averageConfidence: number;
   diversificationScore: number;
+}
+
+export interface LegacyScore {
+  overall: number;
+  breakdown: { label: string; score: number; weight: number }[];
+  confidence: number;
+  explanation: string;
 }
 
 export interface LegacyReportData {
@@ -102,4 +102,22 @@ export interface LegacyReportRecord {
   pdfStoragePath: string | null;
   shareCardUrl: string | null;
   generatedAt: string;
+}
+
+export interface LegacyDataBundle {
+  userId: string;
+  user: { createdAt: Date; email: string };
+  dna: { dnaScore: number; primaryType: string; secondaryType: string | null; traits: Record<string, number> };
+  facts: { id: string; label: string; value: unknown; confidence: number; isVerified: boolean; key: string }[];
+  snapshotCount: number;
+  cover: LegacyCoverData;
+  collectionHighlights: LegacyCollectionHighlight[];
+  memoryHighlights: LegacyMemoryHighlight[];
+  conversationHighlights: LegacyConversationHighlight[];
+  achievements: LegacyAchievementHighlight[];
+  goals: LegacyGoalHighlight[];
+  portfolio: LegacyPortfolioSnapshot;
+  legacyScore: LegacyScore;
+  provenanceHighlights: { label: string; detail: string }[];
+  marketNote: string;
 }
