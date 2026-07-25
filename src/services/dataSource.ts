@@ -38,11 +38,6 @@ export interface CollectorProfileSummary {
   collectionValue: number;
 }
 
-/**
- * Resolves whether to read from the real database or from demo fixtures,
- * once, per request. Every function below takes the result so a page only
- * has to call this — and isDemoMode() — a single time.
- */
 export async function resolveDataMode() {
   return isDemoMode();
 }
@@ -216,7 +211,6 @@ export async function getActivityFeed(userId: string, demo: boolean, limit = 10)
   }));
 }
 
-// ✅ FIX APPLIED HERE: Normalizes both demo and DB snapshots to the exact same shape
 export async function getDNASnapshots(userId: string, demo: boolean) {
   if (demo) {
     return demoReplay.snapshots.map((s) => ({
@@ -236,7 +230,8 @@ export async function getDNASnapshots(userId: string, demo: boolean) {
 export async function getAchievements(userId: string, demo: boolean) {
   if (demo) return demoAchievements;
 
-  const rows = await prisma.achievement.findMany({ where: { userId, unlockedAt: { not: null } } });
+  // ✅ FIX: Removed `unlockedAt: { not: null }` so it returns all achievements (locked and unlocked)
+  const rows = await prisma.achievement.findMany({ where: { userId } });
 
   return rows.map((r) => ({
     id: r.id,
@@ -246,6 +241,9 @@ export async function getAchievements(userId: string, demo: boolean) {
     icon: r.icon,
     progress: r.progress,
     unlockedAt: r.unlockedAt?.toISOString() ?? null,
+    // ✅ FIX: Added missing properties required by the AchievementBadge type
+    isUnlocked: r.unlockedAt !== null,
+    xp: 100, // Default XP value. Adjust based on your actual game logic if needed.
   }));
 }
 
@@ -290,7 +288,7 @@ export async function getLegacyReport(userId: string, demo: boolean) {
     orderBy: { generatedAt: "desc" },
   });
 
-  return row ? (row.reportData as object) : null;
+  return row?.reportData ?? null;
 }
 
 export async function getChatList(userId: string, demo: boolean) {

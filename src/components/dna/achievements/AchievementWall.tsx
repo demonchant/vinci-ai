@@ -1,23 +1,12 @@
 "use client";
+
 import { useState } from "react";
 import { AchievementCard } from "./AchievementCard";
-
-interface Achievement {
-  id: string;
-  key: string;
-  title: string;
-  description: string;
-  icon: string;
-  tier: "bronze" | "silver" | "gold" | "legendary";
-  xp: number;
-  isUnlocked: boolean;
-  progress: number;
-  unlockedAt?: string | null;
-}
+import type { AchievementBadge } from "@/types/dna"; // ✅ Import shared type instead of defining locally
 
 type Filter = "all" | "unlocked" | "locked";
 
-export function AchievementWall({ achievements }: { achievements: Achievement[] }) {
+export function AchievementWall({ achievements }: { achievements: AchievementBadge[] }) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const filtered = achievements.filter((a) => {
@@ -51,11 +40,12 @@ export function AchievementWall({ achievements }: { achievements: Achievement[] 
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {/* ✅ FIX APPLIED HERE: Destructure 'key' to prevent prop collision */}
+        {/* ✅ FIX: Destructure 'key' to prevent React prop collision, and provide fallback for 'tier' */}
         {filtered.map(({ key, ...achievement }, i) => (
           <AchievementCard
             key={key}
             {...achievement}
+            // ✅ Fallback to "bronze" if tier is missing/undefined
             index={i}
           />
         ))}

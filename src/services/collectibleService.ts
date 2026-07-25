@@ -3,7 +3,10 @@ import { logActivity } from "./activityLogService";
 import { commitMemoryFacts } from "./memoryService";
 import { appendTimelineEvent } from "./timelineEvents";
 import type { CreateCollectibleInput } from "@/types/collectible";
-import type { CollectibleStatus } from "@prisma/client";
+import type {
+  CollectibleStatus,
+  CollectibleCategory,
+} from "@prisma/client";
 
 export async function createCollectible(userId: string, input: CreateCollectibleInput) {
   const collectible = await prisma.collectible.create({
@@ -50,7 +53,13 @@ export async function createCollectible(userId: string, input: CreateCollectible
 
   // A new collectible is a strong, structured memory signal — commit it directly
   // rather than going through free-text extraction.
-  const facts = [];
+  const facts: Array<{
+    key: string;
+    label: string;
+    value: string;
+    confidence: number;
+  }> = [];
+  
   if (input.category) {
     facts.push({
       key: "favorite_category",
@@ -77,16 +86,17 @@ export async function createCollectible(userId: string, input: CreateCollectible
 export async function listCollectibles(
   userId: string,
   filters?: {
-    status?: CollectibleStatus;
-    category?: string;
-    collectionId?: string;
-  }
+  status?: CollectibleStatus;
+  category?: CollectibleCategory;
+  collectionId?: string;
+}
 ) {
   const rows = await prisma.collectible.findMany({
     where: {
       userId,
       status: filters?.status,
-      category: filters?.category as any,
+      // ✅ FIX: Removed `as any` cast. Prisma accepts `string | undefined` natively.
+      category: filters?.category,
       collectionId: filters?.collectionId,
     },
     include: { images: true },

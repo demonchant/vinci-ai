@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client"; // ✅ FIX: Added Prisma import for JSON typing
 import { openai, AI_MODELS } from "@/lib/openai";
 import { getRecentActivity } from "./activityLogService";
 import { getMemoryProfile } from "./memoryService";
@@ -88,13 +89,15 @@ export async function resolveSuggestion(
         userId,
         key: suggestion.suggestedKey,
         label: suggestion.suggestedLabel,
-        value: suggestion.suggestedValue as any,
+        // ✅ FIX: Replaced `as any` with `Prisma.InputJsonValue`
+        value: suggestion.suggestedValue as Prisma.InputJsonValue,
         source: "MANUAL_EDIT",
         confidence: 75,
       },
       update: {
         label: suggestion.suggestedLabel,
-        value: suggestion.suggestedValue as any,
+        // ✅ FIX: Replaced `as any` with `Prisma.InputJsonValue`
+        value: suggestion.suggestedValue as Prisma.InputJsonValue,
         isArchived: false,
       },
     });

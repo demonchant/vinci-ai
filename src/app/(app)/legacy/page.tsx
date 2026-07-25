@@ -39,7 +39,8 @@ const SECTIONS: ReportSection[] = [
 ];
 
 export default function LegacyPage() {
-  const { report, isGenerating, error, generate, loadReport, downloadExport } = useLegacy();
+  // ✅ FIX: Removed unused 'downloadExport'
+  const { report, isGenerating, error, generate, loadReport } = useLegacy();
   const [demo, setDemo] = useState(false);
   const [activeSection, setActiveSection] = useState("cover");
 
@@ -62,7 +63,6 @@ export default function LegacyPage() {
     const res = await fetch(`/api/legacy/export?format=json&reportId=${reportId}`);
     if (!res.ok) return;
     
-    // Explicitly type the JSON response
     const data: LegacyReportData = await res.json();
     
     loadReport({
@@ -77,7 +77,6 @@ export default function LegacyPage() {
     });
   }
 
-  // Explicitly type the report data variable
   const rd: LegacyReportData | undefined = report?.reportData;
 
   return (
@@ -229,7 +228,6 @@ export default function LegacyPage() {
                 {rd.provenanceHighlights.length > 0 && (
                   <Section id="provenance" title="Provenance Highlights">
                     <div className="space-y-2">
-                      {/* ✅ Explicitly typed to prevent implicit 'any' error */}
                       {rd.provenanceHighlights.map((h: { label: string; detail: string }, i: number) => (
                         <div key={i} className="rounded-xl bg-white/[0.02] p-3">
                           <p className="text-[11px] uppercase tracking-wide text-gray-600">{h.label}</p>

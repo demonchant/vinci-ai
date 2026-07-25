@@ -9,21 +9,21 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
 
   if (demo) {
-    // Demo data is a fixed fixture array — apply lightweight client-side-style
-    // filtering here instead of a real query, so the page still feels live.
     let items = await getCollection(userId, true);
     const category = params.get("category");
     const status = params.get("status");
     const query = params.get("query");
+    
     if (category) items = items.filter((i) => i.category === category);
     if (status) items = items.filter((i) => i.status === status);
     if (query) items = items.filter((i) => i.title.toLowerCase().includes(query.toLowerCase()));
+    
     return Response.json({ items, demo: true });
   }
 
   const filters: CollectionFilters = {
-    category: (params.get("category") as any) ?? undefined,
-    status: (params.get("status") as any) ?? undefined,
+    category: params.get("category") as CollectionFilters["category"],
+    status: params.get("status") as CollectionFilters["status"],
     collectionId: params.get("collectionId") ?? undefined,
     tagIds: params.get("tagIds")?.split(",").filter(Boolean),
     condition: params.get("condition") ?? undefined,
@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
     yearFrom: params.has("yearFrom") ? Number(params.get("yearFrom")) : undefined,
     yearTo: params.has("yearTo") ? Number(params.get("yearTo")) : undefined,
     query: params.get("query") ?? undefined,
-    sortBy: (params.get("sortBy") as any) ?? undefined,
-    sortDir: (params.get("sortDir") as any) ?? undefined,
+    sortBy: params.get("sortBy") as CollectionFilters["sortBy"],
+    sortDir: params.get("sortDir") as CollectionFilters["sortDir"],
   };
 
   const rows = await queryCollectibles(userId, filters);

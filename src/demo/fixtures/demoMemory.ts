@@ -13,7 +13,7 @@ function fact(
 
   return {
     id: `demo-memory-${key}`,
-    key: key as any,
+    key, // ✅ FIX: Removed "as any" cast
     label,
     value,
     source: "CHAT",

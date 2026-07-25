@@ -13,6 +13,12 @@ interface ContextData {
   primaryType: string;
 }
 
+// ✅ FIX: Added explicit interface to replace `any`
+interface MemoryFact {
+  label: string;
+  value: unknown;
+}
+
 export function ChatContextPanel({ chatId }: { chatId: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<"context" | "timeline">("context");
@@ -24,7 +30,7 @@ export function ChatContextPanel({ chatId }: { chatId: string }) {
       fetch("/api/dna").then((r) => r.json()),
     ]).then(([memRes, dnaRes]) => {
       setData({
-        memory: (memRes.facts ?? []).slice(0, 5).map((f: any) => ({ label: f.label, value: f.value })),
+        memory: (memRes.facts ?? []).slice(0, 5).map((f: MemoryFact) => ({ label: f.label, value: f.value })),
         dnaScore: dnaRes.dna?.dnaScore ?? 0,
         primaryType: dnaRes.dna?.primaryType ?? "EXPLORER",
       });

@@ -47,7 +47,8 @@ export function SocialProof() {
       >
         {TESTIMONIALS.map((t) => (
           <motion.figure key={t.name} variants={fadeUp} className="glass rounded-2xl p-6">
-            <blockquote className="text-sm leading-relaxed text-gray-300">"{t.quote}"</blockquote>
+            {/* ✅ FIX: Escaped quotes around the dynamic variable */}
+            <blockquote className="text-sm leading-relaxed text-gray-300">&quot;{t.quote}&quot;</blockquote>
             <figcaption className="mt-4 text-xs text-gray-500">
               <span className="font-medium text-gray-300">{t.name}</span> · {t.role}
             </figcaption>

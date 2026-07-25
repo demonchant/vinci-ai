@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { resolveViewer } from "@/lib/viewer";
 import { computeCollectorDNA } from "@/services/dnaEngine";
 import { listAchievements } from "@/services/achievementService";
@@ -7,7 +6,7 @@ import { listAchievements } from "@/services/achievementService";
  * Returns a server-rendered SVG DNA Card — no html2canvas, no browser APIs,
  * no flakiness. The SVG is directly downloadable or embeddable anywhere.
  */
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const { userId, demo } = await resolveViewer();
 
   let score = 72;
@@ -21,7 +20,6 @@ export async function GET(_req: NextRequest) {
     ]);
     score = dna.dnaScore;
     type = dna.primaryType;
-    // ✅ FIX APPLIED HERE: Use unlockedAt instead of isUnlocked
     unlockedCount = achievements.filter((a) => a.unlockedAt !== null).length;
   }
 

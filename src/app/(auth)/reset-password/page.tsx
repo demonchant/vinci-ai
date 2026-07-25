@@ -89,7 +89,8 @@ export default function ResetPasswordPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Set a new password</h1>
-        <p className="text-sm text-gray-500">Choose a password you haven't used before.</p>
+        {/* ✅ FIX: Replaced raw apostrophe with &apos; */}
+        <p className="text-sm text-gray-500">Choose a password you haven&apos;t used before.</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>

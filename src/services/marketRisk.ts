@@ -38,7 +38,8 @@ export function computePortfolioRisk(collectibles: Collectible[]): PortfolioRisk
   const overallScore = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
   const overallLevel = scoreToLevel(overallScore);
 
-  const suggestions = generateRiskSuggestions(factors, owned);
+  // ✅ FIX: Removed unused 'owned' argument from the function call
+  const suggestions = generateRiskSuggestions(factors);
 
   return { overallLevel, overallScore, factors, suggestions };
 }
@@ -171,9 +172,9 @@ function scoreToLevel(score: number): RiskLevel {
   return "low";
 }
 
+// ✅ FIX: Removed unused 'owned' parameter from the function signature
 function generateRiskSuggestions(
-  factors: PortfolioRisk["factors"],
-  owned: Collectible[]
+  factors: PortfolioRisk["factors"]
 ): string[] {
   const suggestions: string[] = [];
 

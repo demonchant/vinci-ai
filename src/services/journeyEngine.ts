@@ -4,7 +4,7 @@ import type { CollectorDNA, CollectorArchetype } from "@/types/dna";
 import type {
   CollectorJourney,
   JourneyMilestone,
-  JourneyMilestoneType,
+  // ✅ FIX: Removed unused 'JourneyMilestoneType'
   JourneyChapter,
   JourneyStats,
 } from "@/types/journey";
@@ -23,7 +23,8 @@ export function buildCollectorJourney(
   const startDate = sortedMilestones[0]?.date ?? new Date().toISOString();
 
   const narrative = generateNarrative(chapters, dna);
-  const nextHint = generateNextMilestoneHint(collectibles, memories, achievements);
+  // ✅ FIX: Updated function call to match new signature (removed unused arguments)
+  const nextHint = generateNextMilestoneHint(collectibles);
 
   const totalMilestones = milestones.length;
   const journeyProgress = Math.min(100, Math.round(totalMilestones * 8));
@@ -216,10 +217,9 @@ function generateNarrative(chapters: JourneyChapter[], dna: CollectorDNA): strin
   return parts.join(" ");
 }
 
+// ✅ FIX: Removed unused 'memories' and 'achievements' parameters from function signature
 function generateNextMilestoneHint(
-  collectibles: Collectible[],
-  memories: CollectorMemoryFact[],
-  achievements: { title: string; unlockedAt: string | null }[]
+  collectibles: Collectible[]
 ): string | null {
   const unauthenticated = collectibles.filter((c) => !c.isAuthenticated && (c.estimatedValue ?? 0) > 200);
   if (unauthenticated.length > 0) {

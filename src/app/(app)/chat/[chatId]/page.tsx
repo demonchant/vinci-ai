@@ -13,6 +13,18 @@ import { ChatContextPanel } from "@/components/chat/ChatContextPanel";
 import { UpdateToastStack, type UpdateNotice } from "@/components/chat/UpdateToast";
 import { CollectibleCard } from "@/components/chat/RichCards";
 
+interface PendingAnalysis {
+  imageUrl: string;
+  analysis: {
+    identification?: string;
+    category?: string;
+    valueRangeLow?: number | null;
+    valueRangeHigh?: number | null;
+    confidenceScore?: number;
+    [key: string]: unknown;
+  };
+}
+
 export default function ChatThreadPage() {
   return (
     <Suspense fallback={null}>
@@ -28,7 +40,7 @@ function ChatThread() {
   const [initialMessages, setInitialMessages] = useState<ChatMessage[] | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const [notices, setNotices] = useState<UpdateNotice[]>([]);
-  const [pendingAnalyses, setPendingAnalyses] = useState<any[]>([]);
+  const [pendingAnalyses, setPendingAnalyses] = useState<PendingAnalysis[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,8 +62,6 @@ function ChatThread() {
       content: m.content,
     })),
     onFinish: async () => {
-      // Check whether this turn created a checkpoint, and surface a
-      // subtle, non-intrusive notice if so — never a blocking popup.
       const res = await fetch(`/api/chat/${chatId}/checkpoints`);
       if (!res.ok) return;
       const data = await res.json();
@@ -82,7 +92,7 @@ function ChatThread() {
     await append({ role: "user", content: text });
   }
 
-  function handleAnalyzed(result: { imageUrl: string; analysis: any }) {
+  function handleAnalyzed(result: PendingAnalysis) {
     setPendingAnalyses((prev) => [...prev, result]);
   }
 
@@ -133,7 +143,7 @@ function ChatThread() {
           {pendingAnalyses.map((a, i) => (
             <CollectibleCard
               key={i}
-              title={a.analysis.identification}
+              title={a.analysis.identification ?? "Unknown"}
               category={a.analysis.category ?? "Unknown"}
               estimatedValue={
                 a.analysis.valueRangeLow

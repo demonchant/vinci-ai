@@ -122,9 +122,10 @@ export function LegacyDemoPanel() {
     <div className="glass-strong rounded-2xl p-6">
       {WINDOW_CHROME}
       <p className="font-display text-lg">Collector Legacy Report</p>
+      {/* ✅ FIX: Escaped quotes */}
       <p className="mt-2 text-sm text-gray-400">
-        "You began as an Explorer driven by curiosity. Today you collect with the discipline of an
-        Investor and the depth of a Historian."
+        &quot;You began as an Explorer driven by curiosity. Today you collect with the discipline of an
+        Investor and the depth of a Historian.&quot;
       </p>
       <div className="mt-4 flex gap-2 text-xs text-gray-500">
         <span className="rounded-full bg-white/5 px-3 py-1">DNA Score 87</span>

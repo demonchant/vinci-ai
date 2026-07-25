@@ -2,6 +2,16 @@ import { resolveViewer } from "@/lib/viewer";
 import { getCollection, getDNA, getMemoryFacts, getMarketPulse } from "@/services/dataSource";
 import { runMultiPerspectiveReasoning } from "@/services/multiPerspectiveReasoning";
 import type { ReasoningPerspective } from "@/types/reasoning";
+import type { Collectible } from "@/types/collectible";
+import type { CollectorMemoryFact } from "@/types/memory";
+
+type CollectionResponse = {
+  items: Collectible[];
+};
+
+type MemoryResponse = {
+  facts: CollectorMemoryFact[];
+};
 
 export async function POST(request: Request) {
   const { userId, demo } = await resolveViewer();
@@ -18,17 +28,20 @@ export async function POST(request: Request) {
     getMarketPulse(demo),
   ]);
 
-  const collectibles = Array.isArray(collectiblesRaw)
+  const collectibles: Collectible[] = Array.isArray(collectiblesRaw)
     ? collectiblesRaw
-    : (collectiblesRaw as any)?.items ?? [];
+    : (collectiblesRaw as CollectionResponse).items ?? [];
 
-  const memories = (memoryData as any).facts ?? memoryData;
+  const memories: CollectorMemoryFact[] = Array.isArray(memoryData)
+    ? memoryData
+    : (memoryData as MemoryResponse).facts ?? [];
+
   const targetCollectible = collectibleId
-    ? collectibles.find((c: any) => c.id === collectibleId)
+    ? collectibles.find((c) => c.id === collectibleId)
     : undefined;
 
   const synthesis = runMultiPerspectiveReasoning(
-    { query, collectibles, memories: memories as any, dna, marketInsights, targetCollectible },
+    { query, collectibles, memories, dna, marketInsights, targetCollectible },
     perspectives
   );
 

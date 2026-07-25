@@ -31,7 +31,8 @@ const PortfolioAnalyticsCharts = dynamic(
 export default function CollectionPage() {
   const { filters, updateFilter, clearFilters, viewMode, setViewMode } = useCollectionFilters();
   const { items, isLoading, refresh } = useCollection(filters);
-  const { selected, toggle, selectAll, clear, count } = useBulkSelection();
+  // ✅ FIX: Removed unused 'selectAll'
+  const { selected, toggle, clear, count } = useBulkSelection();
   const [stats, setStats] = useState<PortfolioStats | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [showAnalytics, setShowAnalytics] = useState(false);

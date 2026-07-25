@@ -3,6 +3,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createCollectible, listCollectibles } from "@/services/collectibleService";
 import { createDNASnapshot } from "@/services/dnaSnapshotService";
 import { z } from "zod";
+import {
+  CollectibleStatus,
+  CollectibleCategory,
+} from "@prisma/client";
 
 const createSchema = z.object({
   title: z.string().min(1),
@@ -45,11 +49,25 @@ export async function GET(req: NextRequest) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const items = await listCollectibles(user.id, {
-    status: (searchParams.get("status") as any) ?? undefined,
-    category: searchParams.get("category") ?? undefined,
-    collectionId: searchParams.get("collectionId") ?? undefined,
-  });
+  const category = searchParams.get("category");
+
+const validCategory =
+  category &&
+  Object.values(CollectibleCategory).includes(
+    category as CollectibleCategory
+  )
+    ? (category as CollectibleCategory)
+    : undefined;
+
+const items = await listCollectibles(user.id, {
+  status:
+    (searchParams.get("status") as CollectibleStatus | null) ??
+    undefined,
+
+  category: validCategory,
+
+  collectionId: searchParams.get("collectionId") ?? undefined,
+});
   return Response.json({ items });
 }
 

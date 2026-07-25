@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { runLabAnalysis } from "@/services/imageAnalysisEngine";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/services/activityLogService";
 import { extractMemoryFacts, commitMemoryFacts, getMemoryProfile } from "@/services/memoryService";
@@ -9,13 +10,13 @@ import { createDNASnapshot } from "@/services/dnaSnapshotService";
 import { maybeCreateCheckpoint } from "@/services/checkpointService";
 import { appendTimelineEvent } from "@/services/timelineEvents";
 import { AI_VALUATION_DISCLAIMER } from "@/lib/openai";
+import { CollectibleCategory } from "@prisma/client";
 
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET_COLLECTIBLES ?? "collectible-images";
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 export async function POST(req: NextRequest) {
-  // ── Step 1: Validate file ──────────────────────────────────
   const supabase = await createSupabaseServerClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,7 +36,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "File too large (max 10MB)" }, { status: 413 });
   }
 
-  // ── Step 2: Store in Supabase Storage ──────────────────────
   const admin = createSupabaseAdminClient();
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
   const imageUrl = publicUrlData.publicUrl;
 
   try {
-    // ── Step 3-5: Vision analysis, structured observations, confidence ──
     const lab = await runLabAnalysis(imageUrl);
 
     const analysisRecord = await prisma.imageAnalysis.create({
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest) {
         collectibleId: collectibleId ?? undefined,
         imageUrl,
         identification: lab.identification,
-        category: lab.category ?? undefined,
+        category: lab.category ? (lab.category as CollectibleCategory) : undefined,
         estimatedRarity: lab.estimatedRarity,
         condition: lab.estimatedCondition,
         authenticity: lab.authenticityIndicators.join("; ") || "No specific indicators noted",
@@ -69,13 +68,12 @@ export async function POST(req: NextRequest) {
         confidenceScore: lab.overallConfidence,
         interestingFact: lab.keyObservations[0] ?? null,
         similarItems: [],
-        rawModelOutput: lab as any,
+        rawModelOutput: lab as unknown as Prisma.InputJsonValue,
       },
     });
 
     await logActivity(userId, "IMAGE_ANALYZED", { analysisId: analysisRecord.id, collectibleId });
 
-    // ── Step 6: Compare against existing collection (if linked) ──
     let comparisonNote: string | null = null;
     if (collectibleId) {
       const existing = await prisma.collectible.findFirst({ where: { id: collectibleId, userId } });
@@ -94,7 +92,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Step 7: Append Visual Provenance Timeline event ──
     if (collectibleId) {
       const isFirst = !comparisonNote;
       await appendTimelineEvent({
@@ -111,7 +108,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Step 8: Suggest Collector Memory updates ──
     const { facts: existingFacts } = await getMemoryProfile(userId);
     const dnaBefore = await computeCollectorDNA(userId);
     const extracted = await extractMemoryFacts(
@@ -122,14 +118,10 @@ export async function POST(req: NextRequest) {
     let checkpointResult = null;
     if (extracted.length > 0) {
       await commitMemoryFacts(userId, extracted, "IMAGE_ANALYSIS");
-      // ── Step 9: Update Collector DNA when justified ──
       await createDNASnapshot(userId, `Analyzed collectible: ${lab.identification}`);
       const memoryAfter = await getMemoryProfile(userId);
       const dnaAfter = await computeCollectorDNA(userId);
 
-      // ── Step 10: Create Conversation Checkpoint if meaningful ──
-      // Image analyses outside chat aren't tied to a chat thread, so we
-      // only create a checkpoint when one is explicitly tied to a chat.
       const chatId = formData.get("chatId") as string | null;
       if (chatId) {
         checkpointResult = await maybeCreateCheckpoint({
@@ -158,7 +150,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Step 11/12 done above (history saved, actions returned to client) ──
     return Response.json({
       analysis: { ...lab, id: analysisRecord.id, createdAt: analysisRecord.createdAt, disclaimer: AI_VALUATION_DISCLAIMER },
       imageUrl,

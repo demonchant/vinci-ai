@@ -2,11 +2,10 @@ import type {
   Watchlist,
   WatchlistItem,
   MarketAlert,
-  AlertType,
   AlertStatus,
-  AlertConfig,
+  // ✅ FIX: Removed unused 'AlertType' and 'AlertConfig'
 } from "@/types/market";
-import type { CollectibleCategory } from "@/types/common";
+// ✅ FIX: Removed unused 'CollectibleCategory' import entirely
 
 const demoWatchlists: Watchlist[] = [
   {
@@ -166,32 +165,42 @@ const demoAlerts: MarketAlert[] = [
   },
 ];
 
-export async function getWatchlists(_userId: string, demo: boolean): Promise<Watchlist[]> {
+export async function getWatchlists(userId: string, demo: boolean): Promise<Watchlist[]> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   if (demo) return demoWatchlists;
   return [];
 }
 
-export async function getWatchlist(_userId: string, watchlistId: string, demo: boolean): Promise<Watchlist | null> {
+export async function getWatchlist(userId: string, watchlistId: string, demo: boolean): Promise<Watchlist | null> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   if (demo) return demoWatchlists.find((w) => w.id === watchlistId) ?? null;
   return null;
 }
 
-export async function getAlerts(_userId: string, demo: boolean): Promise<MarketAlert[]> {
+export async function getAlerts(userId: string, demo: boolean): Promise<MarketAlert[]> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   if (demo) return demoAlerts;
   return [];
 }
 
-export async function getUnreadAlertCount(_userId: string, demo: boolean): Promise<number> {
+export async function getUnreadAlertCount(userId: string, demo: boolean): Promise<number> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   if (demo) return demoAlerts.filter((a) => a.status === "unread").length;
   return 0;
 }
 
 export async function updateAlertStatus(
-  _userId: string,
+  userId: string,
   alertId: string,
   status: AlertStatus,
   demo: boolean
 ): Promise<MarketAlert | null> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   if (demo) {
     const alert = demoAlerts.find((a) => a.id === alertId);
     if (!alert) return null;

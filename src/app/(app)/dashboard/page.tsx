@@ -67,7 +67,8 @@ export default async function DashboardPage() {
     <div className="container py-10">
       {isEmpty ? (
         <>
-          <h1 className="font-display text-2xl">Let's build your Collector DNA</h1>
+          {/* ✅ FIX: Escaped apostrophe in JSX */}
+          <h1 className="font-display text-2xl">Let&apos;s build your Collector DNA</h1>
           <p className="mt-1 text-sm text-gray-500">
             Vinci AI learns from everything you do here. Start with any of these.
           </p>
@@ -100,7 +101,6 @@ export default async function DashboardPage() {
 
           <MemoryWidgetCard facts={memory.facts} />
           
-          {/* ✅ FIX: Use projectedArchetype with a safe fallback to primaryType */}
           <DNAEvolutionCard snapshots={snapshots} projected={dna.projectedArchetype ?? dna.primaryType} />
           
           <AchievementsCard achievements={achievements} />

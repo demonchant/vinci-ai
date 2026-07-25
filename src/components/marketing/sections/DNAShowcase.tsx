@@ -43,9 +43,10 @@ export function DNAShowcase() {
           <p className="text-xs text-gray-500">Collector DNA Score</p>
           <p className="mt-2 font-display text-7xl text-gradient">92</p>
           <p className="mt-1 text-xs text-gray-500">/ 100</p>
+          {/* ✅ FIX: Escaped quotes */}
           <p className="mt-4 text-sm text-gray-300">
-            "Your collection shows strong long-term investment discipline and a preference for
-            historically significant collectibles."
+            &quot;Your collection shows strong long-term investment discipline and a preference for
+            historically significant collectibles.&quot;
           </p>
           <div className="mt-6 flex gap-2">
             <span className="rounded-full bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary">

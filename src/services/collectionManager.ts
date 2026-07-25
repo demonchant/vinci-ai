@@ -3,14 +3,15 @@ import { logActivity } from "./activityLogService";
 import { appendTimelineEvent } from "./timelineEvents";
 import { createDNASnapshot } from "./dnaSnapshotService";
 import type { CollectionFilters } from "@/types/collection";
-import type { CollectibleStatus } from "@prisma/client";
+import type { CollectibleStatus, Prisma } from "@prisma/client"; // ✅ FIX: Added Prisma import
 
 // ──────────────────────────────────────────────────────────────
 // FILTERED QUERIES — the single read path every collection view uses
 // ──────────────────────────────────────────────────────────────
 
 export async function queryCollectibles(userId: string, filters: CollectionFilters) {
-  const where: any = { userId };
+  // ✅ FIX: Replaced `any` with `Prisma.CollectibleWhereInput`
+  const where: Prisma.CollectibleWhereInput = { userId };
 
   if (filters.category) where.category = filters.category;
   if (filters.status) where.status = filters.status;

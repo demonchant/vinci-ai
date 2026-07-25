@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 import { Brain, Eye, Sparkles, ChevronDown, ChevronUp } from "@/components/ui/icons";
 import type { ReasoningSynthesis, PerspectiveResult } from "@/types/reasoning";
-import { PERSPECTIVE_CONFIG } from "@/types/reasoning";
+// ✅ FIX: Removed unused `PERSPECTIVE_CONFIG` import
 
 interface Props {
   synthesis: ReasoningSynthesis;

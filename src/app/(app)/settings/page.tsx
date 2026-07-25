@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { signOut } from "@/services/authClient";
+import { signOut } from "@/services/authClient"; // ✅ FIX: Removed unused 'createSupabaseBrowserClient'
 import { useRouter } from "next/navigation";
 
 interface SettingsState {

@@ -11,6 +11,7 @@ import { ContributorsPanel } from "@/components/dna/breakdown/ContributorsPanel"
 import { TraitBreakdown } from "@/components/dna/traits/TraitBreakdown";
 import { Fingerprint, Trophy, Activity, Sparkles, History } from "@/components/ui/icons";
 import { Icon } from "@/components/ui/Icon";
+import type { Achievement } from "@/types/dna";
 
 const DNAWheelInteractive = dynamic(
   () => import("@/components/dna/wheel/DNAWheelInteractive").then((m) => m.DNAWheelInteractive),
@@ -58,9 +59,7 @@ export default function DNAPage() {
         dna={dna}
         userName="Collector"
         stability={stability}
-        daysActive={
-          achievements.find((a: any) => a.key === "collector_veteran")?.progress ?? 0
-        }
+        daysActive={Number(achievements.find((a: Achievement) => a.key === "collector_veteran")?.progress ?? 0)}
       />
 
       {/* Tabs */}
@@ -204,16 +203,17 @@ export default function DNAPage() {
             )}
           </div>
 
-          {achievements.filter((a: any) => a.isUnlocked).length > 0 && (
+          {/* ✅ FIX: Replaced a.isUnlocked with a.unlockedAt !== null */}
+          {achievements.filter((a: Achievement) => a.unlockedAt !== null).length > 0 && (
             <div className="glass rounded-2xl p-5">
               <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">
                 Recent Achievements
               </p>
               <div className="space-y-1.5">
                 {achievements
-                  .filter((a: any) => a.isUnlocked)
+                  .filter((a: Achievement) => a.unlockedAt !== null)
                   .slice(0, 3)
-                  .map((a: any) => (
+                  .map((a: Achievement) => (
                     <div key={a.key} className="flex items-center gap-2 text-xs">
                       <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
                       <span className="text-gray-300">{a.title}</span>

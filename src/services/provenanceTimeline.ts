@@ -3,7 +3,10 @@ import { listTimelineEvents } from "./timelineEvents";
 import { generateProvenanceStory } from "./provenanceStory";
 import type { ProvenanceTimeline, ProvenanceEvent } from "@/types/provenance";
 
-function toProvenanceEvent(row: any): ProvenanceEvent {
+// ✅ FIX: Infer the exact type returned by listTimelineEvents to avoid 'any'
+type TimelineEventRow = Awaited<ReturnType<typeof listTimelineEvents>>[number];
+
+function toProvenanceEvent(row: TimelineEventRow): ProvenanceEvent {
   return {
     id: row.id,
     collectibleId: row.collectibleId,

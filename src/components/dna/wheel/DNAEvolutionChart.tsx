@@ -38,6 +38,7 @@ export function DNAEvolutionChart({ entries }: { entries: DNAEvolutionEntry[] })
           </defs>
           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#71717A" }} />
           <YAxis domain={[0, 100]} hide />
+          {/* ✅ FIX: Replaced `props: any` with a specific interface */}
           <Tooltip
             contentStyle={{
               background: "#111113",
@@ -45,7 +46,7 @@ export function DNAEvolutionChart({ entries }: { entries: DNAEvolutionEntry[] })
               borderRadius: 8,
               fontSize: 12,
             }}
-            formatter={(value: number, _name: string, props: any) => [
+            formatter={(value: number | string, _name: string, props: { payload?: { type?: string } }) => [
               `${value} · ${props.payload?.type ?? ""}`,
               "DNA Score",
             ]}

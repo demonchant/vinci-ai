@@ -21,7 +21,6 @@ async function gatherSignals(userId: string): Promise<AchievementSignals> {
   );
 
   const dnaScore = dna?.dnaScore ?? 0;
-
   const daysActive = user
     ? Math.round((Date.now() - user.createdAt.getTime()) / 86_400_000)
     : 0;
@@ -54,7 +53,6 @@ export async function syncAchievements(userId: string) {
     const existing = await prisma.achievement.findFirst({ where: { userId, key: def.key } });
 
     if (existing) {
-      const alreadyUnlocked = existing.unlockedAt !== null;
       if (existing.unlockedAt === null && isUnlocked) {
         await prisma.achievement.update({
           where: { id: existing.id },
@@ -104,5 +102,8 @@ export async function listAchievements(userId: string) {
     progress: r.progress,
     unlockedAt: r.unlockedAt,
     createdAt: r.createdAt,
+    // ✅ FIX: Added missing properties required by the AchievementBadge type
+    isUnlocked: r.unlockedAt !== null,
+    xp: 100, // Default XP value. Adjust this based on your actual game logic if needed.
   }));
 }

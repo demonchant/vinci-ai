@@ -61,3 +61,12 @@ export interface CollectorMemoryProfile {
   /** Convenience flat map for prompt-building: key -> value */
   asRecord: Record<string, Prisma.JsonValue>;
 }
+
+export interface MemorySuggestion {
+  id: string;
+  suggestedKey: MemoryKey;
+  suggestedLabel: string;
+  suggestedValue: Prisma.JsonValue;
+  reason: string;
+  status: "PENDING" | "ACCEPTED" | "IGNORED" | "NEVER_ASK";
+}

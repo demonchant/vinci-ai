@@ -1,14 +1,28 @@
 import type { AchievementBadge } from "@/types/dna";
 
-function badge(key: string, title: string, description: string, icon: string, daysAgo: number): AchievementBadge {
+function badge(
+  key: string,
+  title: string,
+  description: string,
+  icon: string,
+  daysAgo: number
+): AchievementBadge {
   return {
     id: `demo-achievement-${key}`,
     key,
     title,
     description,
     icon,
+
     progress: 100,
-    unlockedAt: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
+
+    unlockedAt: new Date(
+      Date.now() - daysAgo * 86_400_000
+    ).toISOString(),
+
+    isUnlocked: true,
+
+    xp: 100,
   };
 }
 

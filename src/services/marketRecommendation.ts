@@ -2,17 +2,14 @@ import type { Collectible } from "@/types/collectible";
 import type { CollectibleCategory } from "@/types/common";
 import type {
   MarketRecommendation,
-  RecommendationType,
   RecommendationEvidence,
-  SignalStrength,
   MarketOpportunity,
-  OpportunityType,
   CategoryPerformance,
-  CollectibleValuation,
   WishlistIntelligence,
+  // ✅ FIX: Removed unused 'RecommendationType', 'SignalStrength', 'OpportunityType', 'CollectibleValuation'
 } from "@/types/market";
 import { COLLECTIBLE_CATEGORY_LABELS } from "@/types/common";
-import { valuateCollectible } from "./marketValuation";
+// ✅ FIX: Removed unused 'valuateCollectible' import
 
 export async function generateRecommendations(
   collectibles: Collectible[],

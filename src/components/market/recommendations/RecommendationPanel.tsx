@@ -30,8 +30,9 @@ export function RecommendationPanel({ recommendations }: Props) {
     return (
       <div className="glass rounded-xl p-5">
         <h3 className="text-sm font-medium text-gray-400">Recommendations</h3>
+        {/* ✅ FIX: Escaped apostrophe */}
         <p className="mt-3 text-xs text-gray-500">
-          There isn't enough reliable market data to make recommendations yet.
+          There isn&apos;t enough reliable market data to make recommendations yet.
         </p>
       </div>
     );

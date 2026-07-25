@@ -5,11 +5,13 @@ import { demoReplay } from "@/demo/fixtures/demoReplay";
 
 export const maxDuration = 30;
 
+type DemoReplaySnapshot = (typeof demoReplay.snapshots)[number];
+
 export async function GET() {
   const { userId, demo } = await resolveViewer();
 
   if (demo) {
-    const frames = demoReplay.snapshots.map((s: any, i: number) => ({
+    const frames = demoReplay.snapshots.map((s: DemoReplaySnapshot, i: number) => ({
       index: i,
       snapshotId: `demo-snap-${i}`,
       createdAt: s.timestamp,
@@ -25,7 +27,6 @@ export async function GET() {
       delta: i > 0 ? s.score - (demoReplay.snapshots[i - 1]?.score ?? s.score) : null,
     }));
 
-    // ✅ FIX APPLIED HERE: Extract first and last frame to satisfy TypeScript's strict null checks
     const firstFrame = frames[0];
     const lastFrame = frames.at(-1);
 

@@ -9,8 +9,9 @@ import type { ProvenanceEvent } from "@/types/provenance";
 export function ProvenanceTimelineView({ events }: { events: ProvenanceEvent[] }) {
   if (events.length === 0) {
     return (
+      // ✅ FIX: Escaped apostrophe
       <p className="text-sm text-gray-500">
-        This collectible's timeline will fill in as Vinci AI learns more about it.
+        This collectible&apos;s timeline will fill in as Vinci AI learns more about it.
       </p>
     );
   }

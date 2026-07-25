@@ -2,20 +2,14 @@
 
 import { Sparkles, Check, X } from "@/components/ui/icons";
 import { Icon } from "@/components/ui/Icon";
-
-interface Suggestion {
-  id: string;
-  suggestedLabel: string;
-  suggestedValue: unknown;
-  reason: string;
-}
+import type { MemorySuggestion } from "@/types/memory";
 
 export function SuggestionsPanel({
   suggestions,
   demo,
   onResolve,
 }: {
-  suggestions: Suggestion[];
+  suggestions: MemorySuggestion[];
   demo: boolean;
   onResolve: (id: string, action: "accept" | "ignore" | "never_ask") => void;
 }) {

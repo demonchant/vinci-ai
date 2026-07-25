@@ -2,7 +2,7 @@ import type {
   ReasoningPerspective,
   PerspectiveResult,
   ReasoningSynthesis,
-  PERSPECTIVE_CONFIG,
+  // ✅ FIX: Removed unused 'PERSPECTIVE_CONFIG' type import
 } from "@/types/reasoning";
 import type { Collectible } from "@/types/collectible";
 import type { CollectorMemoryFact } from "@/types/memory";
@@ -249,7 +249,7 @@ function adviseGoals(base: BaseResult, ctx: ReasoningContext): PerspectiveResult
 function synthesize(query: string, perspectives: PerspectiveResult[]): ReasoningSynthesis {
   const avgConfidence = perspectives.reduce((s, p) => s + p.confidence, 0) / perspectives.length;
 
-  const allEvidence = perspectives.flatMap((p) => p.evidence);
+  // ✅ FIX: Removed unused 'allEvidence' variable
   const allLimitations = perspectives.flatMap((p) => p.limitations);
 
   const highConfidence = perspectives.filter((p) => p.confidence > 0.6);

@@ -14,6 +14,15 @@ interface ChatSummary {
   lastMessagePreview: string | null;
 }
 
+// ✅ FIX: Added explicit interface to replace `any`
+interface ChatListItem {
+  id: string;
+  title: string;
+  isPinned: boolean;
+  messages?: { content: string }[];
+  lastMessagePreview?: string | null;
+}
+
 export function ChatSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -24,7 +33,7 @@ export function ChatSidebar() {
     fetch("/api/chat/list")
       .then((r) => r.json())
       .then((data) => {
-        const list = (data.chats ?? []).map((c: any) => ({
+        const list = (data.chats ?? []).map((c: ChatListItem) => ({
           id: c.id,
           title: c.title,
           isPinned: c.isPinned,

@@ -76,7 +76,8 @@ function LoginForm() {
 
       {callbackError && (
         <p className="rounded-lg bg-red-400/10 px-3 py-2 text-sm text-red-400">
-          That sign-in link didn't work. Please try again.
+          {/* ✅ FIX: Replaced raw apostrophe with &apos; */}
+          That sign-in link didn&apos;t work. Please try again.
         </p>
       )}
 

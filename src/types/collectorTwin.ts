@@ -1,4 +1,3 @@
-import type { CollectibleCategory } from "./common";
 import type { CollectorArchetype, RiskProfile } from "./dna";
 
 // ─── Collector Twin Profile ──────────────────────────────────────────────────

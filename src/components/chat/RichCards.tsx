@@ -70,7 +70,7 @@ export function CollectibleCard({
   title: string;
   category: string;
   estimatedValue: string | null;
-  confidence: number;
+  confidence?: number; // ✅ FIX: Made confidence optional to match PendingAnalysis
 }) {
   return (
     <div className="glass max-w-md rounded-xl p-4">
@@ -85,10 +85,21 @@ export function CollectibleCard({
           <span className="text-xs text-gray-500">(AI estimate)</span>
         </p>
       )}
-      <div className="mt-2 h-1 rounded-full bg-white/5">
-        <div className="h-1 rounded-full bg-vinci-aurora" style={{ width: `${confidence}%` }} />
-      </div>
-      <p className="mt-1 text-xs text-gray-500">{confidence}% confidence</p>
+      
+      {/* ✅ FIX: Conditionally render confidence bar and text only when defined */}
+      {confidence !== undefined && (
+        <>
+          <div className="mt-2 h-1 rounded-full bg-white/5">
+            <div
+              className="h-1 rounded-full bg-vinci-aurora"
+              style={{ width: `${confidence}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            {confidence}% confidence
+          </p>
+        </>
+      )}
     </div>
   );
 }

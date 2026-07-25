@@ -6,6 +6,11 @@ import { generateRecommendations, detectOpportunities } from "@/services/marketR
 import { computePortfolioRisk } from "@/services/marketRisk";
 import { getAlerts, getWatchlists } from "@/services/watchlist";
 import type { MarketDashboard } from "@/types/market";
+import type { Collectible } from "@/types/collectible";
+
+type CollectionResponse = {
+  items: Collectible[];
+};
 
 export async function GET() {
   const { userId, demo } = await resolveViewer();
@@ -17,9 +22,10 @@ export async function GET() {
     getWatchlists(userId, demo),
   ]);
 
-  const collectibles = Array.isArray(collectiblesRaw)
+  const collectibles: Collectible[] = Array.isArray(collectiblesRaw)
     ? collectiblesRaw
-    : (collectiblesRaw as any)?.items ?? [];
+    : (collectiblesRaw as CollectionResponse).items ?? [];
+
   const valuation = await valuatePortfolio(collectibles);
   const categoryPerformance = await computeCategoryPerformance(collectibles);
   const sentiment = computeMarketSentiment(insights, categoryPerformance);

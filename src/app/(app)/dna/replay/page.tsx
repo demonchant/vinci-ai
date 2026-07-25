@@ -10,7 +10,7 @@ import { BeforeAfterComparison } from "@/components/dna/replay/BeforeAfterCompar
 import { StoryCard } from "@/components/dna/story/StoryCard";
 import { PredictionsPanel } from "@/components/dna/predictions/PredictionsPanel";
 import { DNAExportButton } from "@/components/dna/export/DNAExportButton";
-import { Columns, BookOpen } from "@/components/ui/icons";
+import { Columns } from "@/components/ui/icons"; // ✅ FIX: Removed unused 'BookOpen'
 import { Icon } from "@/components/ui/Icon";
 
 const ReplayCanvas = dynamic(

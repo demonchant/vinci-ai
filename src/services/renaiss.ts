@@ -32,22 +32,36 @@ export class RenaissNotImplementedError extends Error {
   }
 }
 
-export async function getCollection(_userId: string): Promise<RenaissCollectionItem[]> {
+export async function getCollection(userId: string): Promise<RenaissCollectionItem[]> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   throw new RenaissNotImplementedError("getCollection");
 }
 
-export async function getMarket(_category?: string): Promise<RenaissMarketSnapshot[]> {
+export async function getMarket(category?: string): Promise<RenaissMarketSnapshot[]> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void category;
   throw new RenaissNotImplementedError("getMarket");
 }
 
-export async function getMetadata(_itemId: string): Promise<Record<string, unknown>> {
+export async function getMetadata(itemId: string): Promise<Record<string, unknown>> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void itemId;
   throw new RenaissNotImplementedError("getMetadata");
 }
 
-export async function verifyOwnership(_userId: string, _itemId: string): Promise<boolean> {
+export async function verifyOwnership(
+  userId: string,
+  itemId: string
+): Promise<boolean> {
+  // ✅ FIX: Added void statements to mark parameters as intentionally unused
+  void userId;
+  void itemId;
   throw new RenaissNotImplementedError("verifyOwnership");
 }
 
-export async function getRWAAssets(_userId: string): Promise<RenaissCollectionItem[]> {
+export async function getRWAAssets(userId: string): Promise<RenaissCollectionItem[]> {
+  // ✅ FIX: Added void statement to mark parameter as intentionally unused
+  void userId;
   throw new RenaissNotImplementedError("getRWAAssets");
 }

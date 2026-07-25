@@ -7,7 +7,7 @@ import type {
   CategoryConfidence,
   ConfidenceHeatmapData,
   ResearchRecommendation,
-  ResearchActionType,
+  // ✅ FIX: Removed unused 'ResearchActionType' import
 } from "@/types/heatmap";
 
 export function computeConfidenceHeatmap(
@@ -32,7 +32,8 @@ export function computeConfidenceHeatmap(
     ? withItems.sort((a, b) => a.confidence - b.confidence)[0]?.category ?? null
     : null;
 
-  const recommendations = generateResearchRecommendations(categoryData, owned, memories);
+  // ✅ FIX: Removed unused 'memories' argument from the function call
+  const recommendations = generateResearchRecommendations(categoryData, owned);
 
   return {
     categories: categoryData,
@@ -171,10 +172,10 @@ function generateCategorySuggestions(category: CollectibleCategory, items: Colle
   return suggestions.slice(0, 3);
 }
 
+// ✅ FIX: Removed unused 'memories' parameter from the function signature
 function generateResearchRecommendations(
   categoryData: CategoryConfidence[],
-  owned: Collectible[],
-  memories: CollectorMemoryFact[]
+  owned: Collectible[]
 ): ResearchRecommendation[] {
   const recommendations: ResearchRecommendation[] = [];
   let id = 0;

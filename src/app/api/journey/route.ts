@@ -1,6 +1,17 @@
 import { resolveViewer } from "@/lib/viewer";
 import { getCollection, getDNA, getMemoryFacts } from "@/services/dataSource";
 import { buildCollectorJourney, computeJourneyStats } from "@/services/journeyEngine";
+import type { Collectible } from "@/types/collectible";
+import type { CollectorMemoryFact } from "@/types/memory";
+import type { Achievement } from "@/types/dna"; // Adjust path if needed
+
+type CollectionResponse = {
+  items: Collectible[];
+};
+
+type MemoryResponse = {
+  facts: CollectorMemoryFact[];
+};
 
 export async function GET() {
   const { userId, demo } = await resolveViewer();
@@ -11,15 +22,18 @@ export async function GET() {
     getMemoryFacts(userId, demo),
   ]);
 
-  const collectibles = Array.isArray(collectiblesRaw)
+  const collectibles: Collectible[] = Array.isArray(collectiblesRaw)
     ? collectiblesRaw
-    : (collectiblesRaw as any)?.items ?? [];
+    : (collectiblesRaw as CollectionResponse).items ?? [];
 
-  const memories = (memoryData as any).facts ?? memoryData;
-  const achievements: { title: string; unlockedAt: string | null }[] = [];
+  const memories: CollectorMemoryFact[] = Array.isArray(memoryData)
+    ? memoryData
+    : (memoryData as MemoryResponse).facts ?? [];
 
-  const journey = buildCollectorJourney(collectibles, memories as any, dna, achievements);
-  const stats = computeJourneyStats(collectibles, memories as any, achievements);
+  const achievements: Achievement[] = [];
+
+  const journey = buildCollectorJourney(collectibles, memories, dna, achievements);
+  const stats = computeJourneyStats(collectibles, memories, achievements);
 
   return Response.json({ journey, stats, demo });
 }

@@ -8,7 +8,7 @@ import { MemoryTimeline } from "@/components/memory/MemoryTimeline";
 import { SuggestionsPanel } from "@/components/memory/SuggestionsPanel";
 import { MemoryHealthPanel } from "@/components/memory/MemoryHealthPanel";
 import { MemoryToolbar } from "@/components/memory/MemoryToolbar";
-import type { CollectorMemoryFact } from "@/types/memory";
+import type { CollectorMemoryFact, MemorySuggestion } from "@/types/memory";
 import type { CategoryGroup, MemoryOverviewStats, MemoryHealth } from "@/services/memoryAnalyticsService";
 import type { GraphNode, GraphEdge } from "@/services/memoryGraphService";
 
@@ -17,14 +17,27 @@ const MemoryGraphView = dynamic(
   { loading: () => <div className="h-[420px] animate-pulse rounded-2xl bg-white/5" /> }
 );
 
+// ✅ FIX: Replaced 'any' with explicit interfaces
+interface TimelineEntry {
+  memoryLabel: string;
+  memoryValue: unknown;
+  source: string;
+  checkpointId: string | null;
+  confidence: number;
+  createdAt: string;
+}
+
 export default function MemoryPage() {
   const [demo, setDemo] = useState(false);
   const [stats, setStats] = useState<MemoryOverviewStats | null>(null);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [health, setHealth] = useState<MemoryHealth | null>(null);
   const [graph, setGraph] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] }>({ nodes: [], edges: [] });
-  const [timeline, setTimeline] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  
+  // ✅ FIX: Changed from local 'Suggestion' interface to imported 'MemorySuggestion' type
+  const [suggestions, setSuggestions] = useState<MemorySuggestion[]>([]);
+  
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"categories" | "graph" | "timeline">("categories");
 

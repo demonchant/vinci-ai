@@ -2,11 +2,13 @@ import { resolveViewer } from "@/lib/viewer";
 import { getDNAEvolutionTimeline } from "@/services/dnaEvolution";
 import { demoReplay } from "@/demo/fixtures/demoReplay";
 
+type DemoSnapshot = typeof demoReplay.snapshots[number];
+
 export async function GET() {
   const { userId, demo } = await resolveViewer();
 
   if (demo) {
-    const timeline = demoReplay.snapshots.map((s: any, i: number) => ({
+    const timeline = demoReplay.snapshots.map((s: DemoSnapshot, i: number) => ({
       id: `demo-snap-${i}`,
       createdAt: s.timestamp,
       dnaScore: s.score,

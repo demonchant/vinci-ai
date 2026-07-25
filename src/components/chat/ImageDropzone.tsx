@@ -4,10 +4,20 @@ import { useCallback, useState } from "react";
 import { Upload, Loader2 } from "@/components/ui/icons";
 import { Icon } from "@/components/ui/Icon";
 
+// ✅ FIX: Added explicit interface to replace `any`
+interface ImageAnalysisResult {
+  identification?: string;
+  category?: string;
+  valueRangeLow?: number | null;
+  valueRangeHigh?: number | null;
+  confidenceScore?: number;
+  [key: string]: unknown;
+}
+
 export function ImageDropzone({
   onAnalyzed,
 }: {
-  onAnalyzed: (result: { imageUrl: string; analysis: any }) => void;
+  onAnalyzed: (result: { imageUrl: string; analysis: ImageAnalysisResult }) => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -18,7 +28,6 @@ export function ImageDropzone({
       setError(null);
       setIsUploading(true);
       try {
-        // Multiple images: analyzed sequentially so each gets its own result.
         for (const file of Array.from(files)) {
           const formData = new FormData();
           formData.append("file", file);

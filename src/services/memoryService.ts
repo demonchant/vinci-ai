@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { openai, AI_MODELS } from "@/lib/openai";
 import { logActivity } from "./activityLogService";
-import type { MemorySource } from "@prisma/client";
+import type { MemorySource, Prisma } from "@prisma/client";
 import type { MemoryExtraction } from "@/types/memory";
 import { z } from "zod";
 
@@ -16,11 +16,6 @@ const extractionSchema = z.object({
   ),
 });
 
-/**
- * Calls OpenAI to extract durable collector facts from a piece of free text
- * (a chat message, a search query, etc). Returns [] if nothing new was learned —
- * most turns will not contain a learnable fact, and that's expected.
- */
 export async function extractMemoryFacts(
   text: string,
   existingKeys: string[]
@@ -56,11 +51,6 @@ If nothing new is learnable, respond with { "facts": [] }.`,
   }
 }
 
-/**
- * Persists extracted facts as CollectorMemory rows (upsert by userId+key),
- * logs the activity, and returns the facts that were actually new/updated
- * so the caller can surface "Vinci AI just learned..." UI.
- */
 export async function commitMemoryFacts(
   userId: string,
   facts: MemoryExtraction[],
@@ -74,7 +64,7 @@ export async function commitMemoryFacts(
 
   const committed = [];
   for (const fact of facts) {
-    if (lockedKeys.has(fact.key)) continue; // locked memories are never auto-overwritten
+    if (lockedKeys.has(fact.key)) continue;
 
     const result = await prisma.collectorMemory.upsert({
       where: { userId_key: { userId, key: fact.key } },
@@ -82,13 +72,13 @@ export async function commitMemoryFacts(
         userId,
         key: fact.key,
         label: fact.label,
-        value: fact.value as any,
+        value: fact.value as Prisma.InputJsonValue,
         source,
         confidence: fact.confidence,
       },
       update: {
         label: fact.label,
-        value: fact.value as any,
+        value: fact.value as Prisma.InputJsonValue,
         source,
         confidence: fact.confidence,
         isArchived: false,
@@ -118,7 +108,6 @@ export async function getMemoryProfile(userId: string) {
   return { facts, asRecord };
 }
 
-/** Builds the system-prompt fragment used to personalize every AI response. */
 export async function buildMemoryPromptContext(userId: string): Promise<string> {
   const { facts } = await getMemoryProfile(userId);
   if (facts.length === 0) {
@@ -149,7 +138,7 @@ export async function editMemory(
 ) {
   return prisma.collectorMemory.update({
     where: { id: memoryId, userId },
-    data: { value: value as any, source: "MANUAL_EDIT" },
+    data: { value: value as Prisma.InputJsonValue, source: "MANUAL_EDIT" },
   });
 }
 
@@ -159,10 +148,6 @@ export async function resetMemory(userId: string) {
     data: { isArchived: true },
   });
 }
-
-// ──────────────────────────────────────────────────────────────
-// KNOWLEDGE CATEGORIES
-// ──────────────────────────────────────────────────────────────
 
 export const MEMORY_CATEGORIES = [
   "Collection Preferences",
@@ -199,11 +184,6 @@ export function categorizeMemoryKey(key: string): MemoryCategory {
   return "Collection Preferences";
 }
 
-// ──────────────────────────────────────────────────────────────
-// VERIFY / LOCK / CORRECT
-// ──────────────────────────────────────────────────────────────
-
-/** User explicitly confirms a memory is correct. Bumps confidence to reflect that. */
 export async function verifyMemory(userId: string, memoryId: string) {
   return prisma.collectorMemory.update({
     where: { id: memoryId, userId },
@@ -218,7 +198,6 @@ export async function unverifyMemory(userId: string, memoryId: string) {
   });
 }
 
-/** Locked memories are skipped by automatic extraction — see memoryService.commitMemoryFacts. */
 export async function setMemoryLock(userId: string, memoryId: string, locked: boolean) {
   return prisma.collectorMemory.update({
     where: { id: memoryId, userId },
@@ -226,7 +205,6 @@ export async function setMemoryLock(userId: string, memoryId: string, locked: bo
   });
 }
 
-/** Correct = edit + mark verified in one action, since a manual correction is high-trust. */
 export async function correctMemory(
   userId: string,
   memoryId: string,
@@ -234,21 +212,15 @@ export async function correctMemory(
 ) {
   return prisma.collectorMemory.update({
     where: { id: memoryId, userId },
-    data: { value: value as any, source: "MANUAL_EDIT", isVerified: true, confidence: 100 },
+    data: { 
+      value: value as Prisma.InputJsonValue, 
+      source: "MANUAL_EDIT", 
+      isVerified: true, 
+      confidence: 100 
+    },
   });
 }
 
-// ──────────────────────────────────────────────────────────────
-// CONFIDENCE
-// ──────────────────────────────────────────────────────────────
-
-/**
- * Recalculates confidence for every active memory based on real evidence:
- * how many checkpoints reference this key, and how long ago it was learned
- * (confidence decays slightly for stale, never-reinforced facts). Verified
- * and locked memories are left untouched — they reflect explicit user
- * confirmation, not a heuristic.
- */
 export async function recalculateAllConfidence(userId: string) {
   const facts = await prisma.collectorMemory.findMany({
     where: { userId, isArchived: false, isVerified: false, isLocked: false },
@@ -273,10 +245,6 @@ export async function recalculateAllConfidence(userId: string) {
   return facts.length;
 }
 
-// ──────────────────────────────────────────────────────────────
-// BULK ACTIONS
-// ──────────────────────────────────────────────────────────────
-
 export async function forgetCategory(userId: string, category: MemoryCategory) {
   const facts = await prisma.collectorMemory.findMany({ where: { userId, isArchived: false } });
   const idsToForget = facts.filter((f) => categorizeMemoryKey(f.key) === category).map((f) => f.id);
@@ -295,10 +263,6 @@ export async function verifyAll(userId: string) {
   });
   return result.count;
 }
-
-// ──────────────────────────────────────────────────────────────
-// EXPORT
-// ──────────────────────────────────────────────────────────────
 
 export async function exportMemoryAsJSON(userId: string): Promise<string> {
   const { facts } = await getMemoryProfile(userId);

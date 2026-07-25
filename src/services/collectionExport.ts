@@ -9,6 +9,8 @@ async function getExportableItems(userId: string) {
 
 export async function exportAsCSV(userId: string): Promise<string> {
   const items = await getExportableItems(userId);
+
+  // ✅ FIX: Added `as const` to infer exact literal types, eliminating the need for `any`
   const headers = [
     "title",
     "category",
@@ -21,15 +23,20 @@ export async function exportAsCSV(userId: string): Promise<string> {
     "grade",
     "purchasePrice",
     "estimatedValue",
-  ];
+  ] as const;
+
   const rows = items.map((i) =>
     headers
       .map((h) => {
-        const value = (i as any)[h];
-        return value === null || value === undefined ? "" : String(value).replace(/,/g, ";");
+        // ✅ FIX: Direct property access is now safely typed
+        const value = i[h];
+        return value === null || value === undefined
+          ? ""
+          : String(value).replace(/,/g, ";");
       })
       .join(",")
   );
+
   return [headers.join(","), ...rows].join("\n");
 }
 

@@ -1,19 +1,22 @@
 import { resolveViewer } from "@/lib/viewer";
-import { getMarketPulse, getCollection } from "@/services/dataSource";
+import { getCollection } from "@/services/dataSource";
 import { computeCategoryPerformance } from "@/services/marketAnalytics";
 import { generateRecommendations, detectOpportunities } from "@/services/marketRecommendation";
+import type { Collectible } from "@/types/collectible";
+
+type CollectionResponse = {
+  items: Collectible[];
+};
 
 export async function GET() {
   const { userId, demo } = await resolveViewer();
 
-  const [insights, collectiblesRaw] = await Promise.all([
-    getMarketPulse(demo),
-    getCollection(userId, demo),
-  ]);
+  // Removed unused getMarketPulse call and insights variable
+  const collectiblesRaw = await getCollection(userId, demo);
 
-  const collectibles = Array.isArray(collectiblesRaw)
+  const collectibles: Collectible[] = Array.isArray(collectiblesRaw)
     ? collectiblesRaw
-    : (collectiblesRaw as any)?.items ?? [];
+    : (collectiblesRaw as CollectionResponse).items ?? [];
 
   const categoryPerformance = await computeCategoryPerformance(collectibles);
   const recommendations = await generateRecommendations(collectibles, categoryPerformance);

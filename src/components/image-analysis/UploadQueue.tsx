@@ -106,7 +106,12 @@ export function UploadQueue({
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  item.status === "error" ? onRetry(item.id) : onCancel(item.id);
+                  // ✅ FIX: Replaced ternary expression with `if/else` to satisfy `no-unused-expressions`
+                  if (item.status === "error") {
+                    onRetry(item.id);
+                  } else {
+                    onCancel(item.id);
+                  }
                 }}
                 className="shrink-0 text-gray-500 hover:text-gray-300"
               >

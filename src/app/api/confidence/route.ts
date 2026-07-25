@@ -1,6 +1,16 @@
 import { resolveViewer } from "@/lib/viewer";
 import { getCollection, getDNA, getMemoryFacts } from "@/services/dataSource";
 import { computeConfidenceHeatmap } from "@/services/confidenceHeatmap";
+import type { Collectible } from "@/types/collectible";
+import type { CollectorMemoryFact } from "@/types/memory";
+
+type CollectionResponse = {
+  items: Collectible[];
+};
+
+type MemoryResponse = {
+  facts: CollectorMemoryFact[];
+};
 
 export async function GET() {
   const { userId, demo } = await resolveViewer();
@@ -11,12 +21,15 @@ export async function GET() {
     getMemoryFacts(userId, demo),
   ]);
 
-  const collectibles = Array.isArray(collectiblesRaw)
+  const collectibles: Collectible[] = Array.isArray(collectiblesRaw)
     ? collectiblesRaw
-    : (collectiblesRaw as any)?.items ?? [];
+    : (collectiblesRaw as CollectionResponse).items ?? [];
 
-  const memories = (memoryData as any).facts ?? memoryData;
-  const heatmap = computeConfidenceHeatmap(collectibles, memories as any, dna);
+  const memories: CollectorMemoryFact[] = Array.isArray(memoryData)
+    ? memoryData
+    : (memoryData as MemoryResponse).facts ?? [];
+
+  const heatmap = computeConfidenceHeatmap(collectibles, memories, dna);
 
   return Response.json({ heatmap, demo });
 }

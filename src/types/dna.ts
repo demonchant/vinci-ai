@@ -61,7 +61,12 @@ export interface AchievementBadge {
   icon: string;
   progress: number;
   unlockedAt: string | null;
+  isUnlocked: boolean; // ✅ Added to satisfy UI expectations
+  xp: number; // ✅ Added to satisfy UI expectations
 }
+
+// ✅ Added type alias to satisfy existing imports in useDNA.ts and dna/page.tsx
+export type Achievement = AchievementBadge;
 
 export interface CollectorDNAInsight {
   text: string;
@@ -84,7 +89,7 @@ export interface CollectorDNA {
   dnaScore: number;
   primaryType: CollectorArchetype;
   secondaryType: CollectorArchetype | null;
-  projectedArchetype?: CollectorArchetype; // ✅ Added
+  projectedArchetype?: CollectorArchetype;
   summary: string;
   traits: DNATrait[];
   wheel: DNAWheelAxis[];

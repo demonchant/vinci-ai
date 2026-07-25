@@ -47,10 +47,11 @@ export function DNAWheelInteractive({ traits }: { traits: TraitExplanation[] }) 
               </linearGradient>
             </defs>
             <PolarGrid stroke="rgba(255,255,255,0.05)" />
+            {/* ✅ FIX: Replaced `e: any` with a specific interface */}
             <PolarAngleAxis
               dataKey="axis"
               tick={{ fill: "#71717A", fontSize: 10 }}
-              onClick={(e: any) => {
+              onClick={(e: { value?: string }) => {
                 const found = data.find((d) => d.axis === e.value);
                 if (found) setHovered(found.raw);
               }}

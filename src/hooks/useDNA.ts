@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { CollectorDNA } from "@/types/dna";
+import type { CollectorDNA, Achievement } from "@/types/dna"; // ✅ Added Achievement import
 import type { DNAStability, DNAContributor } from "@/services/dnaAnalytics";
 import type { CoachCard } from "@/services/dnaCoach";
 import type { TraitExplanation } from "@/services/dnaExplainability";
@@ -12,7 +12,8 @@ export function useDNA() {
   const [contributors, setContributors] = useState<DNAContributor[]>([]);
   const [coach, setCoach] = useState<CoachCard | null>(null);
   const [traits, setTraits] = useState<TraitExplanation[]>([]);
-  const [achievements, setAchievements] = useState<any[]>([]);
+  // ✅ FIX APPLIED: Replaced any[] with Achievement[]
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [demo, setDemo] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,7 +37,9 @@ export function useDNA() {
     setIsLoading(false);
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return { dna, stability, contributors, coach, traits, achievements, demo, isLoading, refresh };
 }

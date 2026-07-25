@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * root middleware.ts.
  */
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  const response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client"; // ✅ FIX: Added Prisma import for typing
 import type { RelatedCollectibleSuggestion } from "@/types/collection";
 
 export async function findRelatedCollectibles(
@@ -8,16 +9,19 @@ export async function findRelatedCollectibles(
   const item = await prisma.collectible.findFirst({ where: { id: collectibleId, userId } });
   if (!item) return [];
 
+  // ✅ FIX: Replaced `.filter(Boolean) as any` with a properly typed array using spread syntax
+  const orConditions: Prisma.CollectibleWhereInput[] = [
+    { category: item.category },
+    ...(item.brand ? [{ brand: item.brand }] : []),
+    ...(item.franchise ? [{ franchise: item.franchise }] : []),
+    ...(item.year ? [{ year: item.year }] : []),
+  ];
+
   const candidates = await prisma.collectible.findMany({
     where: {
       userId,
       id: { not: collectibleId },
-      OR: [
-        { category: item.category },
-        item.brand ? { brand: item.brand } : undefined,
-        item.franchise ? { franchise: item.franchise } : undefined,
-        item.year ? { year: item.year } : undefined,
-      ].filter(Boolean) as any,
+      OR: orConditions,
     },
     include: { images: true },
     take: 6,

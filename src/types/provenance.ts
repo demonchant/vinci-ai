@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 export type TimelineEventType =
   | "FIRST_UPLOAD"
   | "IMAGE_REANALYSIS"
@@ -37,7 +39,7 @@ export interface ProvenanceEvent {
   estimatedValueMin: number | null;
   estimatedValueMax: number | null;
   ownershipStatus: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: Prisma.JsonValue | null;
 }
 
 export interface ProvenanceTimeline {

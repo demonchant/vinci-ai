@@ -8,7 +8,7 @@ import type {
   TwinAnswer,
   TwinQuestion,
   TwinCollectibleAssessment,
-  TwinEvolutionSnapshot,
+  // ✅ FIX: Removed unused 'TwinEvolutionSnapshot' import
 } from "@/types/collectorTwin";
 import { COLLECTIBLE_CATEGORY_LABELS, type CollectibleCategory } from "@/types/common";
 

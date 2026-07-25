@@ -51,7 +51,7 @@ interface AchievementCardProps {
   title: string;
   description: string;
   icon: string;
-  tier: "bronze" | "silver" | "gold" | "legendary";
+  tier?: "bronze" | "silver" | "gold" | "legendary";
   xp: number;
   isUnlocked: boolean;
   progress: number;
@@ -63,7 +63,7 @@ export function AchievementCard({
   title,
   description,
   icon,
-  tier,
+  tier = "bronze",
   xp,
   isUnlocked,
   progress,

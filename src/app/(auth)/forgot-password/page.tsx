@@ -51,8 +51,9 @@ export default function ForgotPasswordPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Reset your password</h1>
+        {/* ✅ FIX: Replaced raw apostrophe with &apos; */}
         <p className="text-sm text-gray-500">
-          Enter your email and we'll send you a link to reset it.
+          Enter your email and we&apos;ll send you a link to reset it.
         </p>
       </div>
 

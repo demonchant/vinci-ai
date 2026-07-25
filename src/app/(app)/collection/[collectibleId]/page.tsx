@@ -13,11 +13,10 @@ import {
   Clock,
   MessageSquare,
   Star,
-  History,
   ShieldCheck,
   Wallet,
   Layers,
-} from "@/components/ui/icons";
+} from "@/components/ui/icons"; // ✅ FIX: Removed unused 'History'
 import { Icon } from "@/components/ui/Icon";
 import { COLLECTIBLE_CATEGORY_LABELS } from "@/types/common";
 import { formatCurrency } from "@/lib/utils";

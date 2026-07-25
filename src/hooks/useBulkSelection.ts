@@ -8,7 +8,14 @@ export function useBulkSelection() {
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      
+      // ✅ FIX: Replaced ternary side-effect with standard if/else to satisfy no-unused-expressions
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      
       return next;
     });
   }, []);
@@ -17,5 +24,12 @@ export function useBulkSelection() {
   const clear = useCallback(() => setSelected(new Set()), []);
   const isSelected = useCallback((id: string) => selected.has(id), [selected]);
 
-  return { selected: Array.from(selected), toggle, selectAll, clear, isSelected, count: selected.size };
+  return {
+    selected: Array.from(selected),
+    toggle,
+    selectAll,
+    clear,
+    isSelected,
+    count: selected.size,
+  };
 }
